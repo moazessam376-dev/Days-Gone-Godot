@@ -1,0 +1,23 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Exported builds
+/build/
+/export/
+*.dmg
+*.exe
+*.pck
+
+# macOS
+.DS_Store
+
+# Editor / tooling
+*.translation
+.venv/
+__pycache__/
+
+# Raw asset packs staged locally for import.
+# The IMPORTED, game-ready assets under assets/ ARE committed (via Git LFS);
+# the multi-hundred-MB source packs they came from are not.
+/assets/_raw/
