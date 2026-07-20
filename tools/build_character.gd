@@ -242,10 +242,18 @@ func _build_test_level() -> bool:
 
 # Nodes built in code have no owner, and PackedScene.pack() silently drops
 # unowned children. Every node must be owned by the scene root.
+#
+# But do NOT recurse into an instanced sub-scene. A node with a
+# scene_file_path is the root of its own packed scene; re-owning its children
+# to OUR root makes pack() write them out a second time, so the scene ends up
+# containing the character twice — the instanced copy plus a flattened,
+# un-animated duplicate rendered on top of it. That looked exactly like the
+# retarget having silently failed.
 func _own_all(node: Node, owner_node: Node) -> void:
 	for c in node.get_children():
 		c.owner = owner_node
-		_own_all(c, owner_node)
+		if c.scene_file_path.is_empty():
+			_own_all(c, owner_node)
 
 
 func _find_skeleton(n: Node) -> Skeleton3D:
