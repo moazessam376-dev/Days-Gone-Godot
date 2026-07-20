@@ -20,6 +20,9 @@ const SRC := "res://assets/characters/Characters.fbx"
 const ATLAS := "res://assets/textures/PolygonApocalypse_Texture_01_A.png"
 const KEEP := "SM_Chr_Hunter_Male_01"
 
+const ANIM_DIR := "res://assets/animations/pistol"
+const DEFAULT_ANIM := "W1_Stand_Aim_Idle_IPC"
+
 const OUT_CHAR := "res://scenes/characters/hunter.tscn"
 const OUT_TEST := "res://scenes/test_character.tscn"
 
@@ -75,6 +78,13 @@ func _build_character() -> bool:
 	mesh.material_override = mat
 
 	root.name = "Hunter"
+
+	# Attach the retargeted MoCap clips. This only works because both rigs were
+	# imported through BoneMaps, so the clips' track paths (%GeneralSkeleton:
+	# LeftUpperArm ...) resolve against the Synty skeleton. Nothing is
+	# retargeted at runtime.
+	var anim_count := _attach_animations(root, skel)
+
 	_own_all(root, root)
 
 	var out := PackedScene.new()
@@ -89,8 +99,70 @@ func _build_character() -> bool:
 	print("CHARACTER  bones=", skel.get_bone_count())
 	print("CHARACTER  height_m=%.3f" % aabb.size.y)
 	print("CHARACTER  atlas=", tex.resource_path, " ", tex.get_size())
+	print("CHARACTER  animations=", anim_count)
 	print("CHARACTER  saved=", OUT_CHAR, " err=", err)
 	return err == OK
+
+
+# Pulls every clip out of the imported animation FBXs into one AnimationPlayer
+# on the character. DEFAULT_ANIM autoplays so the scene shows a real pose
+# instead of the bind-pose T-pose.
+func _attach_animations(root: Node, skel: Skeleton3D) -> int:
+	# Track paths are authored against a uniquely-named skeleton node.
+	skel.name = "GeneralSkeleton"
+	skel.unique_name_in_owner = true
+
+	# Characters.fbx ships its OWN AnimationPlayer holding a junk "Take 001"
+	# clip. Leaving it in place means our player collides on name and gets
+	# silently renamed to @AnimationPlayer@2, so anything looking up
+	# "AnimationPlayer" finds the FBX's empty one instead of ours.
+	for c in root.get_children():
+		if c is AnimationPlayer:
+			root.remove_child(c)
+			c.queue_free()
+
+	var player := AnimationPlayer.new()
+	player.name = "AnimationPlayer"
+	var lib := AnimationLibrary.new()
+
+	var count := 0
+	var d := DirAccess.open(ANIM_DIR)
+	if d != null:
+		var files := d.get_files()
+		files.sort()
+		for f in files:
+			if f.get_extension().to_lower() != "fbx":
+				continue
+			var ps: PackedScene = load(ANIM_DIR.path_join(f))
+			if ps == null:
+				continue
+			var inst: Node = ps.instantiate()
+			var src := _find_anim_player(inst)
+			if src == null:
+				continue
+			for clip_name in src.get_animation_list():
+				var anim: Animation = src.get_animation(clip_name).duplicate(true)
+				if clip_name.ends_with("_Loop_IPC") or clip_name.ends_with("_Idle_IPC"):
+					anim.loop_mode = Animation.LOOP_LINEAR
+				lib.add_animation(clip_name, anim)
+				count += 1
+			inst.queue_free()
+
+	player.add_animation_library("", lib)
+	if lib.has_animation(DEFAULT_ANIM):
+		player.autoplay = DEFAULT_ANIM
+	root.add_child(player)
+	return count
+
+
+func _find_anim_player(n: Node) -> AnimationPlayer:
+	if n is AnimationPlayer:
+		return n
+	for c in n.get_children():
+		var r := _find_anim_player(c)
+		if r != null:
+			return r
+	return null
 
 
 func _build_test_level() -> bool:

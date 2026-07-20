@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c1gdplbg1mu2j"
-path="res://.godot/imported/SM_Wep_Grenade_01.fbx-c903d2a8f974ea3a62d377404fdfc41a.scn"
+uid="uid://be7yi55ssa5ey"
+path="res://.godot/imported/1911_01.fbx-5f6c1dfc9e3e334adaabd8a216fbdc1d.scn"
 
 [deps]
 
-source_file="res://assets/weapons/SM_Wep_Grenade_01.fbx"
-dest_files=["res://.godot/imported/SM_Wep_Grenade_01.fbx-c903d2a8f974ea3a62d377404fdfc41a.scn"]
+source_file="res://assets/weapons/1911_01.fbx"
+dest_files=["res://.godot/imported/1911_01.fbx-5f6c1dfc9e3e334adaabd8a216fbdc1d.scn"]
 
 [params]
 
