@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# Private repo — Actions minutes are metered. Keep this lean: it is a
+# regression net, never proof that a visual fix works (see CLAUDE.md).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.1
+
+jobs:
+  lint:
+    name: GDScript lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false # lint needs no binary assets
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install gdtoolkit
+        run: pip install --quiet "gdtoolkit==4.*"
+
+      - name: Lint our GDScript
+        # addons/ is third-party (the Godot MCP) and is not ours to lint.
+        run: |
+          mapfile -t files < <(git ls-files '*.gd' ':!:addons/**')
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No first-party .gd files yet — nothing to lint."
+            exit 0
+          fi
+          printf '%s\n' "${files[@]}"
+          gdlint "${files[@]}"
+
+  check:
+    name: Godot script check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Godot binary
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Download Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot-bin && cd ~/godot-bin
+          curl -sSLo godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot
+          chmod +x godot
+
+      - name: Import project and check for script errors
+        # Godot's exit codes are unreliable for script errors (only --check-only
+        # and export failure set one), so we grep stderr instead. See CLAUDE.md.
+        run: |
+          set -o pipefail
+          ~/godot-bin/godot --headless --import --path . 2>&1 | tee import.log || true
+          if grep -qiE "SCRIPT ERROR|Parse Error|Failed to load script" import.log; then
+            echo "::error::Script errors found during import"
+            grep -iE "SCRIPT ERROR|Parse Error|Failed to load script" import.log
+            exit 1
+          fi
+          echo "No script errors."
