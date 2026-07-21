@@ -1,49 +1,48 @@
-[gd_scene format=3 uid="uid://chu3djm1kqu4o"]
+[gd_scene format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/characters/hunter.tscn" id="1_hunter"]
-[ext_resource type="Script" uid="uid://coo8ys16qked6" path="res://scripts/dev/orbit_camera.gd" id="2_orbit"]
+[ext_resource type="PackedScene" path="res://scenes/characters/hunter.tscn" id="1_1ft0k"]
 
-[sub_resource type="StandardMaterial3D" id="Mat_ground"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tb1xc"]
 albedo_color = Color(0.22, 0.23, 0.25, 1)
 
-[sub_resource type="PlaneMesh" id="Mesh_ground"]
-material = SubResource("Mat_ground")
+[sub_resource type="PlaneMesh" id="PlaneMesh_84abk"]
+material = SubResource("StandardMaterial3D_tb1xc")
 size = Vector2(20, 20)
 
-[sub_resource type="BoxShape3D" id="Shape_ground"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_cu1ws"]
 size = Vector3(20, 0.2, 20)
 
-[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ka262"]
 
-[sub_resource type="Sky" id="Sky_1"]
-sky_material = SubResource("SkyMat")
+[sub_resource type="Sky" id="Sky_ojpq0"]
+sky_material = SubResource("ProceduralSkyMaterial_ka262")
 
-[sub_resource type="Environment" id="Env_1"]
+[sub_resource type="Environment" id="Environment_6ropc"]
 background_mode = 2
-sky = SubResource("Sky_1")
+sky = SubResource("Sky_ojpq0")
 ambient_light_source = 3
 ambient_light_energy = 0.6
 
-[node name="TestCharacter" type="Node3D" unique_id=1943755109]
+[node name="TestCharacter" type="Node3D" unique_id=799656522]
 
-[node name="Ground" type="StaticBody3D" parent="." unique_id=1667233144]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=2124797349]
 
-[node name="Mesh" type="MeshInstance3D" parent="Ground" unique_id=818346412]
-mesh = SubResource("Mesh_ground")
+[node name="Mesh" type="MeshInstance3D" parent="Ground" unique_id=140585712]
+mesh = SubResource("PlaneMesh_84abk")
 
-[node name="Collision" type="CollisionShape3D" parent="Ground" unique_id=1542277269]
+[node name="Collision" type="CollisionShape3D" parent="Ground" unique_id=1620525322]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
-shape = SubResource("Shape_ground")
+shape = SubResource("BoxShape3D_cu1ws")
 
-[node name="Hunter" parent="." unique_id=311476328 instance=ExtResource("1_hunter")]
+[node name="Hunter" type="Node3D" parent="." unique_id=122248979 instance=ExtResource("1_1ft0k")]
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=1194930673]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.49063778, 0, -0.24919939)
-script = ExtResource("2_orbit")
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1480803405]
+transform = Transform3D(1, 0, 0, 0, 0.9945219, 0.104528464, 0, -0.104528464, 0.9945219, 0, 1.2, 3.2)
 
-[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1065453434]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=98921815]
+transform = Transform3D(0.81915206, 0.4055798, -0.4055798, 0, 0.70710677, 0.70710677, 0.57357645, -0.579228, 0.579228, 0, 0, 0)
 light_energy = 1.1
 shadow_enabled = true
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=102591522]
-environment = SubResource("Env_1")
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=36014437]
+environment = SubResource("Environment_6ropc")

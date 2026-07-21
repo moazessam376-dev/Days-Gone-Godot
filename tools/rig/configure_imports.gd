@@ -27,11 +27,20 @@ extends SceneTree
 
 const SYNTY_MAP := "res://resources/rigs/synty_apocalypse_bonemap.tres"
 const MOTUS_MAP := "res://resources/rigs/motusman_v55_bonemap.tres"
+const MIXAMO_MAP := "res://resources/rigs/mixamo_bonemap.tres"
 
 const TARGETS := [
 	{"fbx": "res://assets/characters/Characters.fbx", "map": SYNTY_MAP, "anim": false},
 	{"dir": "res://assets/animations/pistol", "map": MOTUS_MAP, "anim": true},
 	{"fbx": "res://assets/rigs/MotusMan_v55.fbx", "map": MOTUS_MAP, "anim": false},
+	# Phase 2 (M0): free rifle/pistol-gap/unarmed clips.
+	# rifle_mco = MoCap Online free demo pack samples, same MotusMan rig as pistol.
+	# rifle / pistol_extra / unarmed = Mixamo X Bot clips through the Mixamo map.
+	{"dir": "res://assets/animations/rifle_mco", "map": MOTUS_MAP, "anim": true},
+	{"dir": "res://assets/animations/rifle", "map": MIXAMO_MAP, "anim": true},
+	{"dir": "res://assets/animations/pistol_extra", "map": MIXAMO_MAP, "anim": true},
+	{"dir": "res://assets/animations/unarmed", "map": MIXAMO_MAP, "anim": true},
+	{"fbx": "res://assets/rigs/XBot_TPose.fbx", "map": MIXAMO_MAP, "anim": false},
 ]
 
 
@@ -70,9 +79,23 @@ func _list_fbx(dir_path: String) -> Array[String]:
 
 func _configure(fbx: String, map_path: String, _is_anim: bool) -> bool:
 	var import_path := fbx + ".import"
-	if not FileAccess.file_exists(import_path):
-		push_error("no .import for " + fbx + " (run --import first)")
+	var cfg := _load_import_cfg(import_path)
+	if cfg == null:
 		return false
+
+	var subres: Dictionary = cfg.get_value("params", "_subresources", {})
+	var nodes: Dictionary = subres.get("nodes", {})
+
+	# IDEMPOTENCY GUARD (this trap already fired once): _skeleton_path() reads
+	# the IMPORTED scene. After a first configured import, make_unique has
+	# renamed the skeleton to GeneralSkeleton, so a re-run would key a second,
+	# junk "PATH:GeneralSkeleton" block next to the real "PATH:Skeleton3D" one.
+	# The importer keys by the SOURCE scene's node path, which never changes —
+	# so if any node block already carries a bone_map, this file is done.
+	var configured_key := _configured_key(nodes)
+	if configured_key != "":
+		print("  ok  %-58s already configured (%s)" % [fbx.get_file(), configured_key])
+		return true
 
 	var skel_path := _skeleton_path(fbx)
 	if skel_path == "":
@@ -84,14 +107,6 @@ func _configure(fbx: String, map_path: String, _is_anim: bool) -> bool:
 		push_error("cannot load " + map_path)
 		return false
 
-	var cfg := ConfigFile.new()
-	var err := cfg.load(import_path)
-	if err != OK:
-		push_error("cannot read %s (%d)" % [import_path, err])
-		return false
-
-	var subres: Dictionary = cfg.get_value("params", "_subresources", {})
-	var nodes: Dictionary = subres.get("nodes", {})
 	var key := "PATH:" + skel_path
 
 	var opts: Dictionary = nodes.get(key, {})
@@ -116,12 +131,33 @@ func _configure(fbx: String, map_path: String, _is_anim: bool) -> bool:
 	subres["nodes"] = nodes
 	cfg.set_value("params", "_subresources", subres)
 
-	err = cfg.save(import_path)
+	var err := cfg.save(import_path)
 	if err != OK:
 		push_error("cannot write %s (%d)" % [import_path, err])
 		return false
 	print("  ok  %-58s skel=%s" % [fbx.get_file(), skel_path])
 	return true
+
+
+func _load_import_cfg(import_path: String) -> ConfigFile:
+	if not FileAccess.file_exists(import_path):
+		push_error("no .import at " + import_path + " (run --import first)")
+		return null
+	var cfg := ConfigFile.new()
+	var err := cfg.load(import_path)
+	if err != OK:
+		push_error("cannot read %s (%d)" % [import_path, err])
+		return null
+	return cfg
+
+
+# Returns the key of a node block that already carries a bone_map, or "".
+func _configured_key(nodes: Dictionary) -> String:
+	for existing_key: String in nodes:
+		var existing: Dictionary = nodes[existing_key]
+		if existing.has("retarget/bone_map"):
+			return existing_key
+	return ""
 
 
 func _skeleton_path(fbx: String) -> String:
