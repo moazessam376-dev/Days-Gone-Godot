@@ -173,7 +173,9 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 				continue
 			var clip_names: Array[String] = []
 			for clip_name in src.get_animation_list():
-				if clip_name != "RESET":
+				# "Take 001" is the junk bind-pose take skinned FBX exports
+				# carry (same disease as Characters.fbx's own AnimationPlayer).
+				if clip_name != "RESET" and clip_name != "Take 001":
 					clip_names.append(clip_name)
 			for clip_name in clip_names:
 				var anim: Animation = src.get_animation(clip_name).duplicate(true)
@@ -184,6 +186,8 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 					key = f.get_basename()
 				if _should_loop(key):
 					anim.loop_mode = Animation.LOOP_LINEAR
+				if key.begins_with("W2_"):
+					_fix_w2_positions(anim)
 				if lib.has_animation(key):
 					push_error("duplicate clip name " + key + " from " + f)
 					continue
@@ -196,6 +200,33 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 		player.autoplay = DEFAULT_ANIM
 	root.add_child(player)
 	return count
+
+
+# The MoCap Online free demo pack's W2_ rifle FBXs carry a broken bind pose:
+# their skeleton rests with hips at 0.506 m while the animation keys sit at
+# ~1.70 m (the pistol pack is consistent: 0.941 rest vs 1.011 keys). The
+# importer's normalize_position_tracks trusts the rest pose, silently skips
+# scaling, and the clips play ~0.8 m in the air. MEASURED correction
+# (2026-07-21, live against the pistol clips as ground truth):
+#   * scale all position tracks by 1.011/1.695 = 0.596 (the two packs'
+#     matching stand-aim-idle hips keys), then
+#   * drop the hips track by 0.115 m — after scaling, every W2 clip's lowest
+#     foot still hovered uniformly at ~0.17 m vs the pistol baseline's ~0.05.
+# Verified on screen: feet plant identically to the pistol set.
+const W2_POSITION_SCALE := 0.596
+const W2_HIPS_Y_OFFSET := -0.115
+
+
+func _fix_w2_positions(anim: Animation) -> void:
+	for t in anim.get_track_count():
+		if anim.track_get_type(t) != Animation.TYPE_POSITION_3D:
+			continue
+		var is_hips := String(anim.track_get_path(t)).ends_with(":Hips")
+		for k in anim.track_get_key_count(t):
+			var v: Vector3 = anim.track_get_key_value(t, k) * W2_POSITION_SCALE
+			if is_hips:
+				v.y += W2_HIPS_Y_OFFSET
+			anim.track_set_key_value(t, k, v)
 
 
 # Stances and locomotion cycle; one-shots (fire, reload, draw/holster,
