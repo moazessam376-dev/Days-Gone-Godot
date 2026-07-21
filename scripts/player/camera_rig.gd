@@ -1,0 +1,70 @@
+extends Node3D
+
+# Third-person over-shoulder camera rig: yaw on this node, pitch on the
+# SpringArm3D, per-state distance/FOV/shoulder from PlayerTuning
+# (docs/r1-player-handling.md camera table). The rig only READS input for
+# mouse look; aim state is pushed in by player.gd so there is one source of
+# truth for ADS.
+
+@export var tuning: PlayerTuning
+
+## Set by player.gd every physics frame.
+var ads := false
+
+## +1 = camera over the right shoulder, -1 = left. Toggled with shoulder_swap.
+var shoulder_side := 1.0
+
+@onready var _arm: SpringArm3D = $SpringArm3D
+@onready var _camera: Camera3D = $SpringArm3D/Camera3D
+
+
+func _ready() -> void:
+	_arm.spring_length = tuning.rest_distance
+	_camera.fov = tuning.fov_rest
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		rotation.y -= event.relative.x * tuning.mouse_sensitivity
+		_arm.rotation.x = clampf(
+			_arm.rotation.x - event.relative.y * tuning.mouse_sensitivity,
+			deg_to_rad(tuning.pitch_min_deg),
+			deg_to_rad(tuning.pitch_max_deg)
+		)
+	elif event.is_action_pressed("shoulder_swap"):
+		shoulder_side = -shoulder_side
+
+
+func _physics_process(delta: float) -> void:
+	var target_len: float = tuning.ads_distance if ads else tuning.rest_distance
+	var target_fov: float = tuning.fov_ads if ads else tuning.fov_rest
+	var target_x: float = (tuning.shoulder_x_ads if ads else tuning.shoulder_x_rest) * shoulder_side
+	var blend_time: float = tuning.ads_in_time if ads else tuning.ads_out_time
+
+	var w := _smooth_weight(blend_time, delta)
+	_arm.spring_length = lerpf(_arm.spring_length, target_len, w)
+	_camera.fov = lerpf(_camera.fov, target_fov, w)
+
+	var sw := _smooth_weight(tuning.shoulder_swap_time, delta)
+	_arm.position.x = lerpf(_arm.position.x, target_x, sw)
+
+
+## Frame-rate-independent smoothing weight that covers ~95% of the remaining
+## distance in `time` seconds.
+func _smooth_weight(time: float, delta: float) -> float:
+	if time <= 0.0:
+		return 1.0
+	return 1.0 - exp(-3.0 * delta / time)
+
+
+## Horizontal forward direction of the camera, for camera-relative movement.
+func flat_forward() -> Vector3:
+	var f := -global_transform.basis.z
+	f.y = 0.0
+	return f.normalized()
+
+
+func flat_right() -> Vector3:
+	var r := global_transform.basis.x
+	r.y = 0.0
+	return r.normalized()
