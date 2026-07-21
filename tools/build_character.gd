@@ -44,6 +44,20 @@ const SUPPORT_TUNER_SCRIPT := "res://scripts/rig/support_hand_tuner.gd"
 const OUT_CHAR := "res://scenes/characters/hunter.tscn"
 const OUT_TEST := "res://scenes/test_character.tscn"
 
+# The MoCap Online free demo pack's W2_ rifle FBXs carry a broken bind pose:
+# their skeleton rests with hips at 0.506 m while the animation keys sit at
+# ~1.70 m (the pistol pack is consistent: 0.941 rest vs 1.011 keys). The
+# importer's normalize_position_tracks trusts the rest pose, silently skips
+# scaling, and the clips play ~0.8 m in the air. MEASURED correction
+# (2026-07-21, live against the pistol clips as ground truth):
+#   * scale all position tracks by 1.011/1.695 = 0.596 (the two packs'
+#     matching stand-aim-idle hips keys), then
+#   * drop the hips track by 0.115 m — after scaling, every W2 clip's lowest
+#     foot still hovered uniformly at ~0.17 m vs the pistol baseline's ~0.05.
+# Verified on screen: feet plant identically to the pistol set.
+const W2_POSITION_SCALE := 0.596
+const W2_HIPS_Y_OFFSET := -0.115
+
 
 func _init() -> void:
 	DirAccess.make_dir_recursive_absolute("res://scenes/characters")
@@ -188,6 +202,7 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 					anim.loop_mode = Animation.LOOP_LINEAR
 				if key.begins_with("W2_"):
 					_fix_w2_positions(anim)
+				_collapse_root_into_hips(anim)
 				if lib.has_animation(key):
 					push_error("duplicate clip name " + key + " from " + f)
 					continue
@@ -202,21 +217,6 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 	return count
 
 
-# The MoCap Online free demo pack's W2_ rifle FBXs carry a broken bind pose:
-# their skeleton rests with hips at 0.506 m while the animation keys sit at
-# ~1.70 m (the pistol pack is consistent: 0.941 rest vs 1.011 keys). The
-# importer's normalize_position_tracks trusts the rest pose, silently skips
-# scaling, and the clips play ~0.8 m in the air. MEASURED correction
-# (2026-07-21, live against the pistol clips as ground truth):
-#   * scale all position tracks by 1.011/1.695 = 0.596 (the two packs'
-#     matching stand-aim-idle hips keys), then
-#   * drop the hips track by 0.115 m — after scaling, every W2 clip's lowest
-#     foot still hovered uniformly at ~0.17 m vs the pistol baseline's ~0.05.
-# Verified on screen: feet plant identically to the pistol set.
-const W2_POSITION_SCALE := 0.596
-const W2_HIPS_Y_OFFSET := -0.115
-
-
 func _fix_w2_positions(anim: Animation) -> void:
 	for t in anim.get_track_count():
 		if anim.track_get_type(t) != Animation.TYPE_POSITION_3D:
@@ -227,6 +227,56 @@ func _fix_w2_positions(anim: Animation) -> void:
 			if is_hips:
 				v.y += W2_HIPS_Y_OFFSET
 			anim.track_set_key_value(t, k, v)
+
+
+# Some sources key the Root bone (the demo-pack W2 clips hold it at a constant
+# -37 deg X; W1's D90/U90/Fire also carry Root tracks). A clip that keys Root
+# POISONS every clip played after it that does not: AnimationPlayer leaves the
+# bone at its last pose, so the whole character stays tilted — this produced
+# the "everything after a rifle clip faces the sky" review round. In-place
+# clips must not key Root at all, so compose Root's motion into the Hips
+# tracks (global_hips = root * hips) and drop the Root tracks entirely.
+func _collapse_root_into_hips(anim: Animation) -> void:
+	var root_rot := -1
+	var root_pos := -1
+	var hips_rot := -1
+	var hips_pos := -1
+	for t in anim.get_track_count():
+		var tp := String(anim.track_get_path(t))
+		if tp.ends_with(":Root"):
+			if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D:
+				root_rot = t
+			elif anim.track_get_type(t) == Animation.TYPE_POSITION_3D:
+				root_pos = t
+		elif tp.ends_with(":Hips"):
+			if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D:
+				hips_rot = t
+			elif anim.track_get_type(t) == Animation.TYPE_POSITION_3D:
+				hips_pos = t
+	if root_rot == -1 and root_pos == -1:
+		return
+	if hips_rot != -1:
+		for k in anim.track_get_key_count(hips_rot):
+			var tm := anim.track_get_key_time(hips_rot, k)
+			var rq := Quaternion.IDENTITY
+			if root_rot != -1:
+				rq = anim.rotation_track_interpolate(root_rot, tm)
+			var hq: Quaternion = anim.track_get_key_value(hips_rot, k)
+			anim.track_set_key_value(hips_rot, k, rq * hq)
+	if hips_pos != -1:
+		for k in anim.track_get_key_count(hips_pos):
+			var tm := anim.track_get_key_time(hips_pos, k)
+			var rq := Quaternion.IDENTITY
+			if root_rot != -1:
+				rq = anim.rotation_track_interpolate(root_rot, tm)
+			var rp := Vector3.ZERO
+			if root_pos != -1:
+				rp = anim.position_track_interpolate(root_pos, tm)
+			var hp: Vector3 = anim.track_get_key_value(hips_pos, k)
+			anim.track_set_key_value(hips_pos, k, rq * hp + rp)
+	for t in range(anim.get_track_count() - 1, -1, -1):
+		if String(anim.track_get_path(t)).ends_with(":Root"):
+			anim.remove_track(t)
 
 
 # Stances and locomotion cycle; one-shots (fire, reload, draw/holster,
