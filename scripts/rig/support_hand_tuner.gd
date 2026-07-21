@@ -39,9 +39,14 @@ const CHAINS := {
 @export_range(-90.0, 90.0, 0.5) var index_curl := 0.0
 @export_range(-90.0, 90.0, 0.5) var middle_curl := 0.0
 
-## Which local axis a finger joint bends around. Change only if a curl slider
-## visibly splays the fingers sideways instead of closing them.
+@export_group("Bend axes (measured from the mocap — rarely need changing)")
+## Axis the index/middle joints bend around. Measured off the animation's own
+## rotation on LeftIndexProximal / LeftMiddleProximal, which curl about
+## (0.99, 0.13, -0.03) and (0.997, 0.01, -0.07) — i.e. clean +X.
 @export var curl_axis := Vector3(1, 0, 0)
+## The thumb opposes rather than curls, so it rotates about a different axis.
+## Measured off LeftThumbProximal: (0.728, -0.020, 0.685).
+@export var thumb_axis := Vector3(0.728, 0.0, 0.685)
 
 var _bones: Dictionary = {}
 var _wrist := -1
@@ -62,12 +67,12 @@ func _process_modification() -> void:
 		var off := Quaternion.from_euler(wrist_offset_deg * (PI / 180.0))
 		skel.set_bone_pose_rotation(_wrist, skel.get_bone_pose_rotation(_wrist) * off)
 
-	_curl("thumb", thumb_curl, skel)
-	_curl("index", index_curl, skel)
-	_curl("middle", middle_curl, skel)
+	_curl("thumb", thumb_curl, thumb_axis, skel)
+	_curl("index", index_curl, curl_axis, skel)
+	_curl("middle", middle_curl, curl_axis, skel)
 
 
-func _curl(chain: String, degrees: float, skel: Skeleton3D) -> void:
+func _curl(chain: String, degrees: float, axis: Vector3, skel: Skeleton3D) -> void:
 	if is_zero_approx(degrees):
 		return
 	var idxs: Array = _bones.get(chain, [])
@@ -76,7 +81,7 @@ func _curl(chain: String, degrees: float, skel: Skeleton3D) -> void:
 	# Spread the curl across the joints so the finger rolls closed rather than
 	# hinging entirely at the knuckle.
 	var per := deg_to_rad(degrees) / float(idxs.size())
-	var q := Quaternion(curl_axis.normalized(), per)
+	var q := Quaternion(axis.normalized(), per)
 	for i: int in idxs:
 		skel.set_bone_pose_rotation(i, skel.get_bone_pose_rotation(i) * q)
 
