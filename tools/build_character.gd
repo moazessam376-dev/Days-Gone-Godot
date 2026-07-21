@@ -199,6 +199,27 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 		Vector3.ZERO
 	)
 
+	# Where the support palm belongs, riding with the gun so it stays valid in
+	# every clip. Retargeting cannot fix limb-PROPORTION differences, so the
+	# support hand lands ~19 cm from the grip on this rig; TwoBoneIK3D closes
+	# that gap. Reach is 61 cm against ~50 cm needed, so it is never straining.
+	var support := Node3D.new()
+	support.name = "SupportGrip"
+	socket.add_child(support)
+	support.position = Vector3(0.035, -0.020, -0.005)
+
+	var ik := TwoBoneIK3D.new()
+	ik.name = "LeftArmIK"
+	skel.add_child(ik)
+	ik.setting_count = 1
+	ik.set_root_bone_name(0, "LeftUpperArm")
+	ik.set_middle_bone_name(0, "LeftLowerArm")
+	ik.set_end_bone_name(0, "LeftHand")
+	ik.set_target_node(0, NodePath("../RightHandAttach/WeaponSocket/SupportGrip"))
+	# Without a pole the elbow flips between valid solutions mid-animation.
+	ik.set_pole_direction_vector(0, Vector3(0.0, -1.0, -0.35))
+	ik.influence = 1.0
+
 	var ps: PackedScene = load(REVOLVER)
 	if ps == null:
 		push_warning("weapon scene missing: " + REVOLVER)
@@ -207,9 +228,9 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	gun.name = "Revolver"
 	# The revolver's ORIGIN is mid-body, not at the grip. This offset is the
 	# NEGATED centroid of the 130 grip vertices (y < -0.035, z < 0.04),
-	# measured off the real mesh, so the grip lands in the palm rather than
-	# dangling below a closed fist.
-	gun.position = Vector3(0.002650, 0.125200, 0.120789)
+	# measured off the real mesh, then hand-finished by the user dragging the
+	# WeaponSocket gizmo in the editor until the grip sat right in the fist.
+	gun.position = Vector3(0.012529, 0.095424, 0.096369)
 	socket.add_child(gun)
 
 	var gm := _find_mesh(gun)

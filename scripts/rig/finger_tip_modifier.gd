@@ -34,19 +34,13 @@ var _resolved := false
 
 func _ready() -> void:
 	_resolved = false
-	# Both _process_modification() and _process_modification_with_delta() were
-	# measured NOT to dispatch on 4.7 for a script attached to a bare
-	# SkeletonModifier3D node (verified live: node active, influence 1.0,
-	# get_skeleton() valid, has_method() true, yet the tips stayed at rest;
-	# calling the method by hand moved them correctly). Skeleton3D's
-	# `pose_updated` signal is documented to fire when the pose is updated and
-	# explicitly NOT during modifier processing, so it drives this without
-	# re-entrancy.
-	var skel := get_skeleton()
-	if skel != null and not skel.pose_updated.is_connected(_apply_tips):
-		skel.pose_updated.connect(_apply_tips)
 
 
+# HARD-WON NOTE: do not "verify" a modifier with get_bone_global_pose(). That
+# returns the pose BEFORE the modifier stack runs, so a perfectly working
+# modifier reads as a no-op and you will chase it for an hour. Confirm a
+# modifier is live by counting its `modification_processed` signal, and judge
+# the result on screen.
 func _process_modification() -> void:
 	_apply_tips()
 
