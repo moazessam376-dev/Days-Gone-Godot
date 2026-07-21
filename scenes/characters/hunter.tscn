@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://co3ly88dy4pd3" path="res://assets/textures/PolygonApocalypse_Texture_01_A.png" id="1_a2jsk"]
 [ext_resource type="Script" uid="uid://d0x0sshng0gwj" path="res://scripts/rig/finger_tip_modifier.gd" id="9_fingertip"]
+[ext_resource type="Script" path="res://scripts/rig/support_hand_tuner.gd" id="12_tuner"]
 [ext_resource type="PackedScene" uid="uid://btdp3ohye2kj4" path="res://assets/weapons/SM_Wep_Revolver_01.fbx" id="10_revolver"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kdsxx"]
@@ -4679,3 +4680,10 @@ settings/0/middle_bone_name = "LeftLowerArm"
 settings/0/end_bone_name = "LeftHand"
 settings/0/target_node = NodePath("../RightHandAttach/WeaponSocket/SupportGrip")
 settings/0/pole_direction_vector = Vector3(0, -1, -0.35)
+settings/0/pole_node = NodePath("../LeftElbowPole")
+
+[node name="LeftElbowPole" type="Node3D" parent="GeneralSkeleton"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 1, 0.15)
+
+[node name="SupportHandTuner" type="SkeletonModifier3D" parent="GeneralSkeleton"]
+script = ExtResource("12_tuner")

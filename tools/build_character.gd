@@ -24,6 +24,7 @@ const ANIM_DIR := "res://assets/animations/pistol"
 const DEFAULT_ANIM := "W1_Stand_Aim_Idle_IPC"
 const FINGER_TIP_SCRIPT := "res://scripts/rig/finger_tip_modifier.gd"
 const REVOLVER := "res://assets/weapons/SM_Wep_Revolver_01.fbx"
+const SUPPORT_TUNER_SCRIPT := "res://scripts/rig/support_hand_tuner.gd"
 
 const OUT_CHAR := "res://scenes/characters/hunter.tscn"
 const OUT_TEST := "res://scenes/test_character.tscn"
@@ -219,6 +220,23 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	# Without a pole the elbow flips between valid solutions mid-animation.
 	ik.set_pole_direction_vector(0, Vector3(0.0, -1.0, -0.35))
 	ik.influence = 1.0
+
+	# A draggable pole beats a hard-coded vector: the elbow can be aimed by
+	# hand in the viewport instead of by editing numbers.
+	var pole := Node3D.new()
+	pole.name = "LeftElbowPole"
+	skel.add_child(pole)
+	pole.position = Vector3(0.4, 1.0, 0.15)
+	ik.set_pole_node(0, NodePath("../LeftElbowPole"))
+
+	# Wrist + finger corrections for the support hand. MUST be added AFTER the
+	# IK: modifiers run top-to-bottom, so the IK places the arm and this
+	# refines it. Ships all-zero, i.e. a no-op, so the pose is pure mocap
+	# until someone authors a correction in the Inspector.
+	var tuner := SkeletonModifier3D.new()
+	tuner.name = "SupportHandTuner"
+	tuner.set_script(load(SUPPORT_TUNER_SCRIPT))
+	skel.add_child(tuner)
 
 	var ps: PackedScene = load(REVOLVER)
 	if ps == null:
