@@ -22,6 +22,7 @@ const KEEP := "SM_Chr_Hunter_Male_01"
 
 const ANIM_DIR := "res://assets/animations/pistol"
 const DEFAULT_ANIM := "W1_Stand_Aim_Idle_IPC"
+const FINGER_TIP_SCRIPT := "res://scripts/rig/finger_tip_modifier.gd"
 
 const OUT_CHAR := "res://scenes/characters/hunter.tscn"
 const OUT_TEST := "res://scenes/test_character.tscn"
@@ -120,6 +121,14 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 		if c is AnimationPlayer:
 			root.remove_child(c)
 			c.queue_free()
+
+	# Synty fingers have 4 joints; SkeletonProfileHumanoid defines only 3, so
+	# the tips are never mapped and freeze in bind pose while the rest of the
+	# finger curls. This modifier drives them from their parent joint.
+	var tips := SkeletonModifier3D.new()
+	tips.name = "FingerTips"
+	tips.set_script(load(FINGER_TIP_SCRIPT))
+	skel.add_child(tips)
 
 	var player := AnimationPlayer.new()
 	player.name = "AnimationPlayer"

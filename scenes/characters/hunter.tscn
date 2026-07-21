@@ -1,5 +1,7 @@
 [gd_scene format=4]
 
+[ext_resource type="Script" path="res://scripts/rig/finger_tip_modifier.gd" id="9_fingertip"]
+
 [ext_resource type="Texture2D" path="res://assets/textures/PolygonApocalypse_Texture_01_A.png" id="1_a2jsk"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kdsxx"]
@@ -4636,3 +4638,6 @@ skeleton = NodePath("..")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1345982219]
 libraries/ = SubResource("AnimationLibrary_cqb3w")
 autoplay = &"W1_Stand_Aim_Idle_IPC"
+
+[node name="FingerTips" type="SkeletonModifier3D" parent="GeneralSkeleton"]
+script = ExtResource("9_fingertip")

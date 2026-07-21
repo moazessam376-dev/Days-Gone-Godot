@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://chu3djm1kqu4o"]
 
 [ext_resource type="PackedScene" path="res://scenes/characters/hunter.tscn" id="1_hunter"]
+[ext_resource type="Script" uid="uid://coo8ys16qked6" path="res://scripts/dev/orbit_camera.gd" id="2_orbit"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_ground"]
 albedo_color = Color(0.22, 0.23, 0.25, 1)
@@ -37,7 +38,8 @@ shape = SubResource("Shape_ground")
 [node name="Hunter" parent="." unique_id=311476328 instance=ExtResource("1_hunter")]
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1194930673]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.49063778, 0, -0.24919939)
+script = ExtResource("2_orbit")
 
 [node name="Sun" type="DirectionalLight3D" parent="." unique_id=1065453434]
 light_energy = 1.1
