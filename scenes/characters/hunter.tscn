@@ -2,8 +2,8 @@
 
 [ext_resource type="Texture2D" uid="uid://co3ly88dy4pd3" path="res://assets/textures/PolygonApocalypse_Texture_01_A.png" id="1_a2jsk"]
 [ext_resource type="Script" uid="uid://d0x0sshng0gwj" path="res://scripts/rig/finger_tip_modifier.gd" id="9_fingertip"]
-[ext_resource type="Script" path="res://scripts/rig/support_hand_tuner.gd" id="12_tuner"]
 [ext_resource type="PackedScene" uid="uid://btdp3ohye2kj4" path="res://assets/weapons/SM_Wep_Revolver_01.fbx" id="10_revolver"]
+[ext_resource type="Script" uid="uid://kpbd1w8eot0u" path="res://scripts/rig/support_hand_tuner.gd" id="12_tuner"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kdsxx"]
 albedo_texture = ExtResource("1_a2jsk")
@@ -4666,24 +4666,45 @@ transform = Transform3D(0.113889, 0.969717, -0.216051, 0.012759, 0.21602, 0.9763
 [node name="Revolver" parent="GeneralSkeleton/RightHandAttach/WeaponSocket" unique_id=299000700 instance=ExtResource("10_revolver")]
 transform = Transform3D(1, -4.5693014e-09, -1.3969839e-09, -2.3283064e-10, 1, 0, 0, 0, 0.9999997, 0.012528613, 0.09542352, 0.09636867)
 
+[node name="SupportGrip" type="Node3D" parent="GeneralSkeleton/RightHandAttach/WeaponSocket" unique_id=327612030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.035, -0.02, -0.005)
+
+[node name="LeftArmIK" type="TwoBoneIK3D" parent="GeneralSkeleton" unique_id=848169116]
+setting_count = 1
+settings/0/target_node = NodePath("../RightHandAttach/WeaponSocket/SupportGrip")
+settings/0/pole_node = NodePath("../LeftElbowPole")
+settings/0/root_bone_name = "LeftUpperArm"
+settings/0/root_bone = 11
+settings/0/middle_bone_name = "LeftLowerArm"
+settings/0/middle_bone = 12
+settings/0/pole_direction = 0
+settings/0/end_bone_name = "LeftHand"
+settings/0/end_bone = 13
+settings/0/use_virtual_end = false
+settings/0/extend_end_bone = false
+
+[node name="LeftElbowPole" type="Node3D" parent="GeneralSkeleton" unique_id=1461865062]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 1, 0.15)
+
+[node name="SupportHandTuner" type="SkeletonModifier3D" parent="GeneralSkeleton" unique_id=1656521948]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+active = true
+influence = 1.0
+script = ExtResource("12_tuner")
+
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1345982219]
 libraries/ = SubResource("AnimationLibrary_cqb3w")
 autoplay = &"W1_Stand_Aim_Idle_IPC"
-
-[node name="SupportGrip" type="Node3D" parent="GeneralSkeleton/RightHandAttach/WeaponSocket"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.035, -0.02, -0.005)
-
-[node name="LeftArmIK" type="TwoBoneIK3D" parent="GeneralSkeleton"]
-setting_count = 1
-settings/0/root_bone_name = "LeftUpperArm"
-settings/0/middle_bone_name = "LeftLowerArm"
-settings/0/end_bone_name = "LeftHand"
-settings/0/target_node = NodePath("../RightHandAttach/WeaponSocket/SupportGrip")
-settings/0/pole_direction_vector = Vector3(0, -1, -0.35)
-settings/0/pole_node = NodePath("../LeftElbowPole")
-
-[node name="LeftElbowPole" type="Node3D" parent="GeneralSkeleton"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 1, 0.15)
-
-[node name="SupportHandTuner" type="SkeletonModifier3D" parent="GeneralSkeleton"]
-script = ExtResource("12_tuner")
