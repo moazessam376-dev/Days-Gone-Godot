@@ -110,6 +110,31 @@ Other known traps:
 - Synty ships **native Godot projects** for POLYGON Apocalypse — check the Synty account before
   hand-converting anything.
 
+## Who does what — the pose/placement workflow
+
+Agreed with the user on 2026-07-21, after Claude burned several rounds on
+adjust → screenshot → adjust while calibrating a weapon socket.
+
+**The user places. Claude plumbs.**
+
+Anything that needs "move it, look, move it again" — weapon placement, grip, hand position, elbow
+direction, wrist, finger curl, camera framing — is the **user's** job, in the editor, with a gizmo.
+They are faster at it than any screenshot loop, and it is what the editor is for.
+
+**Claude's job around that:**
+1. Make sure a **control exists** for every part of the pose — a draggable `Node3D` or an `@export`
+   field. If the user asks "how do I adjust X" and there is no control, that is a Claude bug.
+2. Verify the control **works** (right axis, right direction) before handing it over. That is
+   plumbing, not tuning.
+3. After the user saves: **read the values out of the `.tscn`**, bake them into the generator
+   (`tools/build_character.gd`), and record them **with their reason** in `docs/rig-tuning.md`.
+4. Never let a rebuild silently revert hand-tuned work.
+
+Claude should **not** tune poses by screenshot. That loop is what cost the Three.js project 14
+rounds. If a value needs eyes, ask for eyes.
+
+Full control map: **`docs/rig-tuning.md`**.
+
 ## Verification (MANDATORY)
 
 The old project's hardest-won rule, kept verbatim in spirit: *headless checks passed all six R2 fix
@@ -124,6 +149,33 @@ rounds while the user reported "nothing is fixed."*
 - **Measured numbers over eyeballing.** Never tune a transform by guessing across screenshots — read
   the delta, set it once. This rule held up in the old project; keep it.
 - **`gdlint` + `--check-only` are a regression net only**, never proof of a visual fix.
+
+### Verify the artefact that actually runs
+
+Three separate bugs this project shipped past automated checks, all the same shape: **a confident
+measurement of the wrong thing.** That is worse than no measurement, because it argues against the
+truth.
+
+- A headless test loaded `hunter.tscn` while the game loaded `test_character.tscn`. It passed
+  11/11 while the user saw a T-pose. **Reproduce the user's path — load the main scene and run it.**
+- `Skeleton3D.get_bone_global_pose()` returns the pose from **before** the modifier stack. Working
+  modifiers read as exact no-ops. This produced a wrong conclusion, a workaround built on it, and a
+  commit that had to be corrected. **Count `modification_processed`; judge the result on screen.**
+- A pose test read the FBX's own `AnimationPlayer` instead of ours after a silent name collision,
+  and reported a perfect T-pose.
+
+Before trusting a green check, ask: *is this measuring the same object, in the same scene, that the
+user will see?*
+
+## Skills
+
+Read these before the matching task; each encodes failures that already cost this project time.
+
+- **`.claude/skills/godot-scene-safety/`** — before editing any `.tscn`/`.tres`/`project.godot`, or
+  running a scene generator. Editor overwrites, `Transform3D` column-wise serialisation, instanced
+  scene duplication, generator overwrite.
+- **`.claude/skills/godot-rig-retargeting/`** — before importing a character or animation FBX,
+  editing a BoneMap, adding a `SkeletonModifier3D`, or attaching a weapon to a bone.
 
 ## Workflow
 
