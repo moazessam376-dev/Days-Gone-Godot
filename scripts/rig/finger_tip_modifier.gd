@@ -71,7 +71,13 @@ func _apply_tips() -> void:
 		var p_pose := skel.get_bone_pose_rotation(parent)
 		var curl := p_rest.inverse() * p_pose
 		var scaled := Quaternion.IDENTITY.slerp(curl.normalized(), follow)
-		skel.set_bone_pose_rotation(tip, _rest_cache[i] * scaled)
+		# PRE-multiply, not post-multiply. `curl` was measured in the PARENT's
+		# local frame, so it has to be applied in that frame too. Post-
+		# multiplying would apply it in the TIP's own frame, and these tips are
+		# exactly the bones the retarget did NOT axis-normalise (unmapped bones
+		# skip Overwrite Axis), so their local axes do not line up with their
+		# parent's — the finger then bends sideways/inward instead of curling.
+		skel.set_bone_pose_rotation(tip, scaled * _rest_cache[i])
 
 
 func _resolve(skel: Skeleton3D) -> void:

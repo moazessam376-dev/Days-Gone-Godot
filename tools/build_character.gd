@@ -23,6 +23,7 @@ const KEEP := "SM_Chr_Hunter_Male_01"
 const ANIM_DIR := "res://assets/animations/pistol"
 const DEFAULT_ANIM := "W1_Stand_Aim_Idle_IPC"
 const FINGER_TIP_SCRIPT := "res://scripts/rig/finger_tip_modifier.gd"
+const REVOLVER := "res://assets/weapons/SM_Wep_Revolver_01.fbx"
 
 const OUT_CHAR := "res://scenes/characters/hunter.tscn"
 const OUT_TEST := "res://scenes/test_character.tscn"
@@ -130,6 +131,8 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 	tips.set_script(load(FINGER_TIP_SCRIPT))
 	skel.add_child(tips)
 
+	_attach_weapon(skel)
+
 	var player := AnimationPlayer.new()
 	player.name = "AnimationPlayer"
 	var lib := AnimationLibrary.new()
@@ -162,6 +165,70 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 		player.autoplay = DEFAULT_ANIM
 	root.add_child(player)
 	return count
+
+
+# Engine-native weapon attachment: BoneAttachment3D -> calibrated socket ->
+# weapon. No IK, no palm-socket math, no per-clip correction. The socket
+# transform is calibrated ONCE for this weapon and is valid for every clip,
+# because import-time Overwrite Axis normalised the bone rest axes.
+#
+# override_pose stays OFF: the docs warn it interferes with the
+# SkeletonModifier3D system, which we rely on for the fingertips (and will
+# rely on for LookAt/TwoBoneIK in Phase 2).
+#
+# The socket basis was measured in the running game against the aim pose, not
+# guessed. NOTE: build the Basis from vectors here rather than copying a
+# Transform3D literal out of a .tscn — the text format lists those 9 floats
+# COLUMN-wise, so a naive row-wise copy silently loads transposed.
+func _attach_weapon(skel: Skeleton3D) -> void:
+	var att := BoneAttachment3D.new()
+	att.name = "RightHandAttach"
+	skel.add_child(att)
+	att.bone_name = "RightHand"
+	att.override_pose = false
+
+	var socket := Node3D.new()
+	socket.name = "WeaponSocket"
+	att.add_child(socket)
+	socket.transform = Transform3D(
+		Basis(
+			Vector3(0.113889, 0.012759, 0.993412),
+			Vector3(0.969717, 0.216020, -0.113947),
+			Vector3(-0.216051, 0.976306, 0.012230)
+		),
+		Vector3.ZERO
+	)
+
+	var ps: PackedScene = load(REVOLVER)
+	if ps == null:
+		push_warning("weapon scene missing: " + REVOLVER)
+		return
+	var gun: Node3D = ps.instantiate()
+	gun.name = "Revolver"
+	# The revolver's ORIGIN is mid-body, not at the grip. This offset is the
+	# NEGATED centroid of the 130 grip vertices (y < -0.035, z < 0.04),
+	# measured off the real mesh, so the grip lands in the palm rather than
+	# dangling below a closed fist.
+	gun.position = Vector3(0.002650, 0.125200, 0.120789)
+	socket.add_child(gun)
+
+	var gm := _find_mesh(gun)
+	if gm != null:
+		var gmat := StandardMaterial3D.new()
+		gmat.albedo_texture = load(ATLAS)
+		gmat.roughness = 0.8
+		gmat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		gm.material_override = gmat
+
+
+func _find_mesh(n: Node) -> MeshInstance3D:
+	if n is MeshInstance3D:
+		return n
+	for c in n.get_children():
+		var r := _find_mesh(c)
+		if r != null:
+			return r
+	return null
 
 
 func _find_anim_player(n: Node) -> AnimationPlayer:

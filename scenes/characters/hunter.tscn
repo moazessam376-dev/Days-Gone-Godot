@@ -1,6 +1,8 @@
 [gd_scene format=4]
 
 [ext_resource type="Script" path="res://scripts/rig/finger_tip_modifier.gd" id="9_fingertip"]
+[ext_resource type="PackedScene" path="res://assets/weapons/SM_Wep_Revolver_01.fbx" id="10_revolver"]
+[ext_resource type="Texture2D" path="res://assets/textures/PolygonApocalypse_Texture_01_A.png" id="11_atlas"]
 
 [ext_resource type="Texture2D" path="res://assets/textures/PolygonApocalypse_Texture_01_A.png" id="1_a2jsk"]
 
@@ -4273,6 +4275,11 @@ _data = {
 &"W1_Walk_Aim_F_Loop_IPC": SubResource("Animation_xkfbs")
 }
 
+[sub_resource type="StandardMaterial3D" id="Mat_gun"]
+albedo_texture = ExtResource("11_atlas")
+roughness = 0.8
+texture_filter = 0
+
 [node name="Hunter" type="Node3D" unique_id=1314144137]
 
 [node name="GeneralSkeleton" type="Skeleton3D" parent="." unique_id=1766521661]
@@ -4641,3 +4648,16 @@ autoplay = &"W1_Stand_Aim_Idle_IPC"
 
 [node name="FingerTips" type="SkeletonModifier3D" parent="GeneralSkeleton"]
 script = ExtResource("9_fingertip")
+
+[node name="RightHandAttach" type="BoneAttachment3D" parent="GeneralSkeleton"]
+bone_name = "RightHand"
+bone_idx = 28
+
+[node name="WeaponSocket" type="Node3D" parent="GeneralSkeleton/RightHandAttach"]
+transform = Transform3D(0.113889, 0.969717, -0.216051, 0.012759, 0.216020, 0.976306, 0.993412, -0.113947, 0.012230, 0.000000, 0.000000, 0.000000)
+
+[node name="Revolver" parent="GeneralSkeleton/RightHandAttach/WeaponSocket" instance=ExtResource("10_revolver")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00265, 0.1252, 0.120789)
+
+[node name="SM_Wep_Revolver_01" parent="GeneralSkeleton/RightHandAttach/WeaponSocket/Revolver" index="0"]
+material_override = SubResource("Mat_gun")
