@@ -27,7 +27,7 @@ because that is where the project is actually blocked.
 
 ## Phases
 
-### Phase 0 — Foundation & workflow  ◀ CURRENT
+### Phase 0 — Foundation & workflow  ✅ DONE
 Environment, repo, tooling, docs. No gameplay.
 - Godot moved to `/Applications` and de-quarantined (it was running under AppTranslocation, which
   breaks all automation); headless CLI verified working.
@@ -53,8 +53,11 @@ BoneMap. Proves the animation pipeline before the paid packs are needed. If it f
 purchase fixes it — fall back to Kubold (Mixamo-identical rig), then Mixamo.
 
 **Gate:** a MoCap Online pistol idle plays on the Synty character with un-twisted arms.
+**✅ DONE 2026-07-21.** Character imported, 10 clips retargeted, revolver attached
+via BoneAttachment3D, support hand solved with TwoBoneIK3D, and the pose
+hand-finished by the user in the editor. See `docs/rig-tuning.md`.
 
-### Phase 2 — Weapon handling vertical slice  (was R2b) — **the point of the migration**
+### Phase 2 — Weapon handling vertical slice  (was R2b) — **the point of the migration**  ◀ CURRENT
 Minimal `CharacterBody3D` + `SpringArm3D` camera, flat test level, one character, two weapons.
 Nothing else. Full node architecture in the approved plan; summary:
 `BoneAttachment3D` socket → `AnimationTree` with a `Blend2` bone filter splitting upper/lower body →
