@@ -332,6 +332,39 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	socket.add_child(support)
 	support.position = Vector3(0.120312, 0.003870, 0.025649)
 
+	# Torso/head aim (Phase 2 M2). MUST run BEFORE LeftArmIK in child order so
+	# the IK solves against the already-rotated torso (docs/rig-tuning.md).
+	# forward_axis +Z is MEASURED: after Overwrite Axis every bone's global
+	# rest basis is world-aligned and the character faces +Z. AimTarget is a
+	# plain Node3D sibling of the skeleton; player.gd points it at the camera
+	# ray while aiming and eases the modifiers' influence up/down.
+	var aim_target := Node3D.new()
+	aim_target.name = "AimTarget"
+	skel.get_parent().add_child(aim_target)
+	aim_target.position = Vector3(0, 1.4, 10.0)
+
+	var torso_look := LookAtModifier3D.new()
+	torso_look.name = "TorsoLookAt"
+	skel.add_child(torso_look)
+	torso_look.bone_name = "UpperChest"
+	torso_look.target_node = NodePath("../../AimTarget")
+	torso_look.forward_axis = SkeletonModifier3D.BONE_AXIS_PLUS_Z
+	torso_look.primary_rotation_axis = Vector3.AXIS_Y
+	torso_look.use_secondary_rotation = true
+	torso_look.duration = 0.15
+	torso_look.influence = 0.6
+
+	var head_look := LookAtModifier3D.new()
+	head_look.name = "HeadLookAt"
+	skel.add_child(head_look)
+	head_look.bone_name = "Head"
+	head_look.target_node = NodePath("../../AimTarget")
+	head_look.forward_axis = SkeletonModifier3D.BONE_AXIS_PLUS_Z
+	head_look.primary_rotation_axis = Vector3.AXIS_Y
+	head_look.use_secondary_rotation = true
+	head_look.duration = 0.15
+	head_look.influence = 0.35
+
 	var ik := TwoBoneIK3D.new()
 	ik.name = "LeftArmIK"
 	skel.add_child(ik)
