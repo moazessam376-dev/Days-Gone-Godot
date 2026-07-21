@@ -4705,6 +4705,12 @@ visibility_parent = NodePath("")
 active = true
 influence = 1.0
 script = ExtResource("12_tuner")
+wrist_offset_deg = Vector3(2.82, -3.78, 0.09)
+thumb_curl = 57.5
+index_curl = -90.0
+middle_curl = -20.0
+curl_axis = Vector3(1.62, -2.36, -0.9)
+thumb_axis = Vector3(0.578, 0, 0.685)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1345982219]
 libraries/ = SubResource("AnimationLibrary_cqb3w")

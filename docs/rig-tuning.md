@@ -79,3 +79,25 @@ SupportHandTuner        wrist + finger corrections — must run AFTER the IK
 
 Phase 2 adds `LookAtModifier3D` (torso aim) and it must sit **before**
 `LeftArmIK`, so the IK solves against the already-rotated torso.
+
+## Current authored values (pistol / revolver, aim idle)
+
+Placed by the user in the editor on 2026-07-21 and baked into
+`tools/build_character.gd`. Recorded here so the intent survives, not just the
+numbers.
+
+| Control | Value | What it was correcting |
+|---|---|---|
+| `WeaponSocket` | basis measured, origin 0 | Aligns the gun level and forward in the aim pose |
+| `Revolver` position | `(0.0125, 0.0954, 0.0964)` | Seats the grip in the fist — the model's origin is mid-body |
+| `SupportGrip` position | `(0.1203, 0.0039, 0.0256)` | Where the left palm meets the gun |
+| `LeftElbowPole` position | `(0.9155, 1.0, 0.15)` | Pushes the left elbow out so the arm reads naturally |
+| `wrist_offset_deg` | `(2.82, -3.78, 0.09)` | A few degrees of roll onto the grip |
+| `thumb_curl` | `+57.5` | Mocap barely wrapped the thumb on this hand |
+| `index_curl` | `-90.0` | Mocap fully curled it; the revolver's trigger guard needs it open |
+| `middle_curl` | `-20.0` | Slightly relaxed |
+
+The curls are large because they are corrections against a MotusMan hand
+posed for a 1911, transferred to a three-fingered Synty hand holding a
+revolver. That is the residual retargeting cannot fix, and it is exactly what
+this layer exists for.

@@ -3,6 +3,11 @@ extends SceneTree
 # Builds a usable Hunter_Male_01 character scene out of the shared Synty
 # Characters.fbx, plus a small test level you can press F5 on.
 #
+# !! THIS OVERWRITES scenes/characters/hunter.tscn AND scenes/test_character.tscn.
+# Every hand-tuned value in those scenes is mirrored in the constants and
+# _attach_weapon() below, so a rebuild reproduces them. If you tune something
+# in the editor, bake it back HERE or the next rebuild silently reverts it.
+#
 # Run with the editor CLOSED:
 #   /Applications/Godot.app/Contents/MacOS/Godot --headless --path . \
 #       --script tools/build_character.gd
@@ -204,10 +209,11 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	# every clip. Retargeting cannot fix limb-PROPORTION differences, so the
 	# support hand lands ~19 cm from the grip on this rig; TwoBoneIK3D closes
 	# that gap. Reach is 61 cm against ~50 cm needed, so it is never straining.
+	# Position placed by the user on the gizmo, not computed.
 	var support := Node3D.new()
 	support.name = "SupportGrip"
 	socket.add_child(support)
-	support.position = Vector3(0.035, -0.020, -0.005)
+	support.position = Vector3(0.120312, 0.003870, 0.025649)
 
 	var ik := TwoBoneIK3D.new()
 	ik.name = "LeftArmIK"
@@ -226,7 +232,7 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	var pole := Node3D.new()
 	pole.name = "LeftElbowPole"
 	skel.add_child(pole)
-	pole.position = Vector3(0.4, 1.0, 0.15)
+	pole.position = Vector3(0.915536, 1.0, 0.15)
 	ik.set_pole_node(0, NodePath("../LeftElbowPole"))
 
 	# Wrist + finger corrections for the support hand. MUST be added AFTER the
@@ -237,6 +243,17 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	tuner.name = "SupportHandTuner"
 	tuner.set_script(load(SUPPORT_TUNER_SCRIPT))
 	skel.add_child(tuner)
+	# Authored by the user in the Inspector against the live game. These are
+	# corrections ON TOP of the mocap, in degrees, so they read as "how wrong
+	# the clip was on this rig": the index finger was fully over-curled for a
+	# revolver trigger guard (-90), the thumb needed to wrap much further
+	# (+57.5), and the wrist wanted a few degrees of roll.
+	tuner.wrist_offset_deg = Vector3(2.82, -3.78, 0.09)
+	tuner.thumb_curl = 57.5
+	tuner.index_curl = -90.0
+	tuner.middle_curl = -20.0
+	tuner.curl_axis = Vector3(1.62, -2.36, -0.9)
+	tuner.thumb_axis = Vector3(0.578, 0.0, 0.685)
 
 	var ps: PackedScene = load(REVOLVER)
 	if ps == null:
