@@ -123,7 +123,8 @@ func _update_anim_tree(ads: bool, delta: float) -> void:
 	# fully on.
 	_tree.set("parameters/PistolCarry/blend_amount", tuning.pistol_carry_arm_lock)
 	_tree.set("parameters/PistolCarryUpper/blend_amount", 1.0)
-	_tree.set("parameters/RifleCarry/blend_position", carry_pos)
+	_tree.set("parameters/RifleCarryLegs/blend_position", carry_pos)
+	_tree.set("parameters/RifleCarry/blend_amount", tuning.rifle_carry_arm_lock)
 	_tree.set("parameters/Unarmed/blend_position", carry_pos)
 	_tree.set("parameters/PistolMove/blend_amount", _stance)
 	_tree.set("parameters/RifleMove/blend_amount", _stance)
@@ -139,9 +140,12 @@ func _update_aim(ads: bool, delta: float) -> void:
 	_torso_look.influence = lerpf(_torso_look.influence, goal.x, w)
 	_head_look.influence = lerpf(_head_look.influence, goal.y, w)
 
-	# The support hand belongs on the gun ONLY while aiming. During carry the
-	# IK chased the grip across the body ("left hand going through the body"
-	# — user); off-aim the left arm plays its natural animated swing instead.
-	var ik_goal := 1.0 if ads else 0.0
+	# The support hand belongs on the gun while aiming — and, for the RIFLE,
+	# during carry too: rifle carry is two-handed, and the IK is what welds
+	# the left palm to the handguard across every gait. The PISTOL keeps the
+	# IK aim-only: its carry is one-handed, and carry-time IK chased the grip
+	# across the body ("left hand going through the body" — user).
+	var rifle_in_hand := _weapons.gun_in_hand() and _weapons.equipped_weapon().anim_set == 1
+	var ik_goal := 1.0 if ads or rifle_in_hand else 0.0
 	_left_ik.influence = lerpf(_left_ik.influence, ik_goal, w)
 	_hand_tuner.influence = _left_ik.influence

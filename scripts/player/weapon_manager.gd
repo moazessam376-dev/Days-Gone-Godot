@@ -59,6 +59,13 @@ func _ready() -> void:
 		_reserve.append(w.reserve)
 	# Re-assert the saved scene's state (the generator ships slot 0 in hand):
 	# calibration sessions toggle eye icons freely; runtime truth starts here.
+	# Stow placement too — the .tres is authoritative at runtime, so a
+	# build_weapons.gd change shows up on the next run without a scene
+	# rebuild (the scene's baked copy only serves editor gizmo sessions).
+	for w in weapons:
+		var stow := _stow_node(w)
+		if stow != null:
+			stow.transform = w.stow_transform()
 	_weapon_blend = float(weapons[_equipped].anim_set)
 	_apply_weapon(_equipped)
 
@@ -194,6 +201,13 @@ func _refresh_visibility() -> void:
 			stow.visible = not in_hand
 
 
-func _stow_mesh(w: WeaponResource) -> Node3D:
+func _stow_node(w: WeaponResource) -> Node3D:
 	var stow_path := "HipSocket/HipStow" if w.stow_socket == "hip" else "BackSocket/BackStow"
-	return _skel.get_node_or_null(NodePath(stow_path + "/" + String(w.id))) as Node3D
+	return _skel.get_node_or_null(NodePath(stow_path)) as Node3D
+
+
+func _stow_mesh(w: WeaponResource) -> Node3D:
+	var stow := _stow_node(w)
+	if stow == null:
+		return null
+	return stow.get_node_or_null(NodePath(String(w.id))) as Node3D

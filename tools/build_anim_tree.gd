@@ -51,7 +51,17 @@ const OUT := "res://resources/animation/player_anim_tree.tres"
 const PISTOL_CARRY := ["U_Idle", "UAL_Walk", "UAL_Jog_Fwd"]
 const PISTOL_CARRY_UPPER := "U_Idle"
 const PISTOL_CARRY_GRIP := "W1_Stand_Aim_Idle_IPC"
+# Rifle carry is the SAME composite trick as the pistol: body/legs from the
+# gait clips, both ARMS held on the two-handed low-carry idle. Forced by
+# measurement (2026-07-23): R_Carry_Jog_F, despite the name, jogs with the
+# rifle RAISED to a high ready (left wrist +0.50 m above hips, upper arm 73
+# deg — an aim pose; user: "the weapon is aimed on jogging"), while
+# R_Carry_Walk_F is a genuine low carry (arm 20 deg, wrist +0.15). The arm
+# filter covers BOTH clavicle subtrees — the rifle is two-handed — and the
+# support-hand IK stays on during rifle carry to weld the left palm to the
+# handguard at every gait.
 const RIFLE_CARRY := ["W2_Stand_Relaxed_Idle_v2", "R_Carry_Walk_F", "R_Carry_Jog_F"]
+const RIFLE_CARRY_HOLD := "W2_Stand_Relaxed_Idle_v2"
 const UNARMED := ["UAL_Idle", "UAL_Walk", "UAL_Jog_Fwd"]
 
 # [clip, x, y]
@@ -77,11 +87,17 @@ const RELOAD_CLIPS := ["W1_Reload", "R_Reload"]
 func _init() -> void:
 	var filter_paths := _subtree_paths("Spine")
 	var right_arm_paths := _subtree_paths("RightShoulder")
+	var left_arm_paths := _subtree_paths("LeftShoulder")
 	var finger_paths := _subtree_paths("RightHand")
 	finger_paths = finger_paths.filter(
 		func(p: String) -> bool: return not p.ends_with(":RightHand")
 	)
-	if filter_paths.is_empty() or right_arm_paths.is_empty() or finger_paths.is_empty():
+	if (
+		filter_paths.is_empty()
+		or right_arm_paths.is_empty()
+		or left_arm_paths.is_empty()
+		or finger_paths.is_empty()
+	):
 		push_error("could not measure filter bones")
 		quit(1)
 		return
@@ -113,7 +129,21 @@ func _init() -> void:
 	tree.add_node("PistolCarry", carry_mix, Vector2(-600, -200))
 	tree.connect_node("PistolCarry", 0, "PistolCarryLegs")
 	tree.connect_node("PistolCarry", 1, "PistolCarryUpper")
-	tree.add_node("RifleCarry", _space_1d(RIFLE_CARRY), Vector2(-600, 0))
+	# RifleCarry = Blend2 with a BOTH-ARMS filter: unfiltered tracks (body,
+	# legs, spine) come from the gait space, filtered tracks (both clavicle
+	# subtrees) hold the two-handed low-carry idle. blend_amount = the
+	# live-tunable rifle_carry_arm_lock.
+	tree.add_node("RifleCarryLegs", _space_1d(RIFLE_CARRY), Vector2(-800, 20))
+	tree.add_node("RifleCarryHold", _anim(RIFLE_CARRY_HOLD), Vector2(-800, 100))
+	var rifle_carry_mix := AnimationNodeBlend2.new()
+	rifle_carry_mix.filter_enabled = true
+	for p in right_arm_paths:
+		rifle_carry_mix.set_filter_path(p, true)
+	for p in left_arm_paths:
+		rifle_carry_mix.set_filter_path(p, true)
+	tree.add_node("RifleCarry", rifle_carry_mix, Vector2(-600, 0))
+	tree.connect_node("RifleCarry", 0, "RifleCarryLegs")
+	tree.connect_node("RifleCarry", 1, "RifleCarryHold")
 	tree.add_node("Unarmed", _space_1d(UNARMED), Vector2(-600, 200))
 	tree.add_node("PistolAim", _space_2d(PISTOL_AIM), Vector2(-600, -300))
 	tree.add_node("RifleAim", _space_2d(RIFLE_AIM), Vector2(-600, -100))

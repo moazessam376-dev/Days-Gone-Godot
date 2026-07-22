@@ -45,3 +45,8 @@ extends Resource
 ## walk's full swing. The source pose hangs straight by the side, so high-ish
 ## values stay close to the body.
 @export_range(0.0, 1.0, 0.01) var pistol_carry_arm_lock := 0.65
+## Same idea for the rifle, but BOTH arms hold the two-handed low-carry
+## idle over the gait clips (R_Carry_Jog_F jogs with the rifle raised to an
+## aim — measured — so the gait arms must not leak through). 1.0 = arms
+## pinned to the carry hold; the support-hand IK welds the left palm on top.
+@export_range(0.0, 1.0, 0.01) var rifle_carry_arm_lock := 1.0

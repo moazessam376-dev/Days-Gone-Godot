@@ -91,7 +91,10 @@ func _run() -> void:
 	)
 	_check(
 		"tuner curls = rifle tres",
-		is_zero_approx(float(skel.get_node("SupportHandTuner").get("thumb_curl")))
+		(
+			absf(float(skel.get_node("SupportHandTuner").get("thumb_curl")) - float(ar.thumb_curl))
+			< 0.001
+		)
 	)
 
 	# --- same-key holster: both weapons stowed, unarmed set

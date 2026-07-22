@@ -127,51 +127,58 @@ blend_point_4/node = SubResource("AnimationNodeAnimation_u8fc5")
 blend_point_4/pos = Vector2(1, 0)
 blend_point_4/name = &"4"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_pg5dp"]
-animation = &"W2_Stand_Relaxed_Idle_v2"
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_pg5dp"]
+filter_enabled = true
+filters = ["%GeneralSkeleton:Finger_04", "%GeneralSkeleton:Finger_04_2", "%GeneralSkeleton:IndexFinger_04", "%GeneralSkeleton:IndexFinger_04_2", "%GeneralSkeleton:LeftHand", "%GeneralSkeleton:LeftIndexDistal", "%GeneralSkeleton:LeftIndexIntermediate", "%GeneralSkeleton:LeftIndexProximal", "%GeneralSkeleton:LeftLowerArm", "%GeneralSkeleton:LeftMiddleDistal", "%GeneralSkeleton:LeftMiddleIntermediate", "%GeneralSkeleton:LeftMiddleProximal", "%GeneralSkeleton:LeftShoulder", "%GeneralSkeleton:LeftThumbDistal", "%GeneralSkeleton:LeftThumbMetacarpal", "%GeneralSkeleton:LeftThumbProximal", "%GeneralSkeleton:LeftUpperArm", "%GeneralSkeleton:RightHand", "%GeneralSkeleton:RightIndexDistal", "%GeneralSkeleton:RightIndexIntermediate", "%GeneralSkeleton:RightIndexProximal", "%GeneralSkeleton:RightLowerArm", "%GeneralSkeleton:RightMiddleDistal", "%GeneralSkeleton:RightMiddleIntermediate", "%GeneralSkeleton:RightMiddleProximal", "%GeneralSkeleton:RightShoulder", "%GeneralSkeleton:RightThumbDistal", "%GeneralSkeleton:RightThumbMetacarpal", "%GeneralSkeleton:RightThumbProximal", "%GeneralSkeleton:RightUpperArm"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6govr"]
-animation = &"R_Carry_Walk_F"
+animation = &"W2_Stand_Relaxed_Idle_v2"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_jr3nq"]
+animation = &"W2_Stand_Relaxed_Idle_v2"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_qrxk6"]
+animation = &"R_Carry_Walk_F"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6lrxb"]
 animation = &"R_Carry_Jog_F"
 
-[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_qrxk6"]
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_tqc4e"]
 min_space = 0.0
-blend_point_0/node = SubResource("AnimationNodeAnimation_pg5dp")
+blend_point_0/node = SubResource("AnimationNodeAnimation_jr3nq")
 blend_point_0/pos = 0.0
 blend_point_0/name = &"0"
-blend_point_1/node = SubResource("AnimationNodeAnimation_6govr")
+blend_point_1/node = SubResource("AnimationNodeAnimation_qrxk6")
 blend_point_1/pos = 0.5
 blend_point_1/name = &"1"
-blend_point_2/node = SubResource("AnimationNodeAnimation_jr3nq")
+blend_point_2/node = SubResource("AnimationNodeAnimation_6lrxb")
 blend_point_2/pos = 1.0
 blend_point_2/name = &"2"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_6lrxb"]
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_tqc4e"]
-animation = &"UAL_Idle"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ofl5e"]
-animation = &"UAL_Walk"
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_ofl5e"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_koli3"]
+animation = &"UAL_Idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_24xfx"]
+animation = &"UAL_Walk"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_wcf6o"]
 animation = &"UAL_Jog_Fwd"
 
-[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_24xfx"]
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_wwb57"]
 min_space = 0.0
-blend_point_0/node = SubResource("AnimationNodeAnimation_tqc4e")
+blend_point_0/node = SubResource("AnimationNodeAnimation_koli3")
 blend_point_0/pos = 0.0
 blend_point_0/name = &"0"
-blend_point_1/node = SubResource("AnimationNodeAnimation_ofl5e")
+blend_point_1/node = SubResource("AnimationNodeAnimation_24xfx")
 blend_point_1/pos = 0.5
 blend_point_1/name = &"1"
-blend_point_2/node = SubResource("AnimationNodeAnimation_koli3")
+blend_point_2/node = SubResource("AnimationNodeAnimation_wcf6o")
 blend_point_2/pos = 1.0
 blend_point_2/name = &"2"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_wcf6o"]
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_3wtob"]
 
 [resource]
 nodes/CarryArmPose/node = SubResource("AnimationNodeAnimation_0srs7")
@@ -184,9 +191,13 @@ nodes/PistolCarryLegs/node = SubResource("AnimationNodeBlendSpace1D_fpf8e")
 nodes/PistolCarryLegs/position = Vector2(-800, -250)
 nodes/PistolCarry/node = SubResource("AnimationNodeBlend2_e4pg2")
 nodes/PistolCarry/position = Vector2(-600, -200)
-nodes/RifleCarry/node = SubResource("AnimationNodeBlendSpace1D_qrxk6")
+nodes/RifleCarryLegs/node = SubResource("AnimationNodeBlendSpace1D_tqc4e")
+nodes/RifleCarryLegs/position = Vector2(-800, 20)
+nodes/RifleCarryHold/node = SubResource("AnimationNodeAnimation_6govr")
+nodes/RifleCarryHold/position = Vector2(-800, 100)
+nodes/RifleCarry/node = SubResource("AnimationNodeBlend2_pg5dp")
 nodes/RifleCarry/position = Vector2(-600, 0)
-nodes/Unarmed/node = SubResource("AnimationNodeBlendSpace1D_24xfx")
+nodes/Unarmed/node = SubResource("AnimationNodeBlendSpace1D_wwb57")
 nodes/Unarmed/position = Vector2(-600, 200)
 nodes/PistolAim/node = SubResource("AnimationNodeBlendSpace2D_wxp4r")
 nodes/PistolAim/position = Vector2(-600, -300)
@@ -194,9 +205,9 @@ nodes/RifleAim/node = SubResource("AnimationNodeBlendSpace2D_v4lpc")
 nodes/RifleAim/position = Vector2(-600, -100)
 nodes/PistolMove/node = SubResource("AnimationNodeBlend2_yqw7y")
 nodes/PistolMove/position = Vector2(-400, -250)
-nodes/RifleMove/node = SubResource("AnimationNodeBlend2_6lrxb")
+nodes/RifleMove/node = SubResource("AnimationNodeBlend2_ofl5e")
 nodes/RifleMove/position = Vector2(-400, -50)
-nodes/WeaponBlend/node = SubResource("AnimationNodeBlend2_wcf6o")
+nodes/WeaponBlend/node = SubResource("AnimationNodeBlend2_3wtob")
 nodes/WeaponBlend/position = Vector2(-200, -150)
 nodes/HolsterBlend/node = SubResource("AnimationNodeBlend2_hcfsq")
 nodes/HolsterBlend/position = Vector2(0, -50)
@@ -216,4 +227,4 @@ nodes/FireShot/node = SubResource("AnimationNodeOneShot_xfovx")
 nodes/FireShot/position = Vector2(200, -100)
 nodes/ReloadShot/node = SubResource("AnimationNodeOneShot_pblfv")
 nodes/ReloadShot/position = Vector2(400, -100)
-node_connections = [&"output", 0, &"ReloadShot", &"PistolCarryUpper", 0, &"CarryArmPose", &"PistolCarryUpper", 1, &"CarryGrip", &"PistolCarry", 0, &"PistolCarryLegs", &"PistolCarry", 1, &"PistolCarryUpper", &"PistolMove", 0, &"PistolCarry", &"PistolMove", 1, &"PistolAim", &"RifleMove", 0, &"RifleCarry", &"RifleMove", 1, &"RifleAim", &"WeaponBlend", 0, &"PistolMove", &"WeaponBlend", 1, &"RifleMove", &"HolsterBlend", 0, &"WeaponBlend", &"HolsterBlend", 1, &"Unarmed", &"FireClip", 0, &"FirePistol", &"FireClip", 1, &"FireRifle", &"ReloadClip", 0, &"ReloadPistol", &"ReloadClip", 1, &"ReloadRifle", &"FireShot", 0, &"HolsterBlend", &"FireShot", 1, &"FireClip", &"ReloadShot", 0, &"FireShot", &"ReloadShot", 1, &"ReloadClip"]
+node_connections = [&"output", 0, &"ReloadShot", &"PistolCarryUpper", 0, &"CarryArmPose", &"PistolCarryUpper", 1, &"CarryGrip", &"PistolCarry", 0, &"PistolCarryLegs", &"PistolCarry", 1, &"PistolCarryUpper", &"RifleCarry", 0, &"RifleCarryLegs", &"RifleCarry", 1, &"RifleCarryHold", &"PistolMove", 0, &"PistolCarry", &"PistolMove", 1, &"PistolAim", &"RifleMove", 0, &"RifleCarry", &"RifleMove", 1, &"RifleAim", &"WeaponBlend", 0, &"PistolMove", &"WeaponBlend", 1, &"RifleMove", &"HolsterBlend", 0, &"WeaponBlend", &"HolsterBlend", 1, &"Unarmed", &"FireClip", 0, &"FirePistol", &"FireClip", 1, &"FireRifle", &"ReloadClip", 0, &"ReloadPistol", &"ReloadClip", 1, &"ReloadRifle", &"FireShot", 0, &"HolsterBlend", &"FireShot", 1, &"FireClip", &"ReloadShot", 0, &"FireShot", &"ReloadShot", 1, &"ReloadClip"]

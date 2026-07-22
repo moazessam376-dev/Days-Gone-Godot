@@ -66,12 +66,14 @@ func _revolver() -> WeaponResource:
 	w.curl_axis = Vector3(1.62, -2.36, -0.9)
 	w.thumb_axis = Vector3(0.578, 0.0, 0.685)
 
-	# Days Gone hip carry. SEED ONLY — awaiting the user's stow placement
-	# session. Hips-bone space (world-aligned at rest, character faces +Z):
-	# right hip is -X, barrel pointed down (+90 deg about X).
+	# Days Gone hip carry, iterated against screenshots (2026-07-23): the
+	# first seed sat deep in the thigh (user: "visibly going on the leg").
+	# Hips-bone space (world-aligned at rest, character faces +Z): right hip
+	# is -X. Moved outboard and up, tilted the barrel a few degrees back so
+	# the animated hips pose doesn't rake it forward into the leg.
 	w.stow_socket = "hip"
-	w.stow_position = Vector3(-0.20, 0.0, -0.06)
-	w.stow_rotation_deg = Vector3(90, 0, 0)
+	w.stow_position = Vector3(-0.26, 0.03, -0.09)
+	w.stow_rotation_deg = Vector3(72, 0, 8)
 
 	w.damage = 65.0
 	w.rpm = 130.0
@@ -97,11 +99,14 @@ func _assault_rifle() -> WeaponResource:
 	w.anim_set = 1
 	w.mesh_scene = load("res://assets/weapons/SM_Wep_AssaultRifle_01.fbx")
 
-	# Same measured basis as the revolver: Overwrite Axis normalised the hand
-	# bone's rest axes, so one pistol-grip orientation transfers to first order.
+	# The revolver's measured basis rotated 19.8 deg about the gun's lateral
+	# axis. Reusing the revolver basis raw read MEASURABLY wrong: a rifle-grip
+	# wrist holds the gun pitched +19.8 deg (muzzle skyward in ADS, probed in
+	# the running game 2026-07-23). Post-multiplying Rx(+19.8) levels ADS at
+	# ~0 deg and puts carry at ~-44 (a fine low-carry rake).
 	w.socket_basis_x = Vector3(0.113889, 0.012759, 0.993412)
-	w.socket_basis_y = Vector3(0.969717, 0.216020, -0.113947)
-	w.socket_basis_z = Vector3(-0.216051, 0.976306, 0.012230)
+	w.socket_basis_y = Vector3(0.839203, 0.533961, -0.103068)
+	w.socket_basis_z = Vector3(-0.531758, 0.845413, 0.050105)
 	w.socket_origin = Vector3.ZERO
 	# Negated grip centroid (112 verts, y < -0.02, -0.12 < z < 0.02, measured
 	# 2026-07-23: (-0.0012, -0.0611, -0.0183)) PLUS the revolver's hand-finish
@@ -109,16 +114,21 @@ func _assault_rifle() -> WeaponResource:
 	# user's revolver placement encodes, weapon-agnostic to first order.
 	w.mesh_offset = Vector3(0.014, 0.083, 0.096)
 	# Under the handguard (underside measured y=0.019, centre z=0.28), wrist
-	# offset left and below the surface; mesh point + mesh_offset.
-	w.support_grip_pos = Vector3(0.064, 0.043, 0.376)
+	# offset left and below the surface; mesh point + mesh_offset. Iterated
+	# against screenshots: raised from the first seed (palm floated), then
+	# pulled BACK to the guard's rear third — a far-forward target
+	# straightened the elbow (user: "the left arm is getting a bit extended").
+	w.support_grip_pos = Vector3(0.06, 0.055, 0.33)
 	w.elbow_pole_pos = Vector3(0.915536, 1.0, 0.15)
 
-	# Zero = pure mocap: the rifle clips are genuinely two-handed, so no
-	# correction until the user sees the rifle actually in the hands.
+	# The mocap left hand held MotusMan's foregrip — on the Synty AK the
+	# fingers read flat/open (screenshot round 3). Coarse wrap seeds so the
+	# hand closes around the handguard; the user's calibration session
+	# fine-finishes these.
 	w.wrist_offset_deg = Vector3.ZERO
-	w.thumb_curl = 0.0
-	w.index_curl = 0.0
-	w.middle_curl = 0.0
+	w.thumb_curl = 25.0
+	w.index_curl = 30.0
+	w.middle_curl = 35.0
 	w.curl_axis = Vector3(1, 0, 0)
 	w.thumb_axis = Vector3(0.728, 0.0, 0.685)
 

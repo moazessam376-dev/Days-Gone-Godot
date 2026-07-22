@@ -104,6 +104,25 @@ const LIB_OUT := "res://resources/animation/hunter_anim_library.res"
 const W2_POSITION_SCALE := 0.596
 const W2_HIPS_Y_OFFSET := -0.115
 
+# The W2 stand/aim clips lean the whole spine forward against the
+# user-approved baselines (measured head-vs-hips lean, 2026-07-23: relaxed
+# idle +5.2 deg vs U_Idle -4.4; aim idle +14.7 and walk-aim +14.0 vs the
+# approved W1 pistol aim +5.0 — user: "leaning forward weirdly with the
+# rifle"). Correction per CLIP, baked onto the spine-chain keys exactly like
+# the UAL family fix; values calibrated by re-measuring after the bake.
+# Gait clips are deliberately NOT corrected: UAL_Jog_Fwd leans +16.8 and
+# passed review — jogging leans forward.
+# Calibrated in two measured rounds: the head-vs-hips lean responds at
+# ~0.59x the baked spine total (lever share of the chain above each joint).
+# Target hit: relaxed idle lands at -2.9 (vs the approved U_Idle -4.4).
+# The AIM clips are deliberately NOT corrected: leveling the aim spine
+# rotates the gun up with it — a -16.5 bias on W2_Stand_Aim_Idle_v2 read as
+# the rifle pointing ~35 deg skyward in ADS (screenshot-verified), while the
+# clip's own +14.7 forward lean reads as an aim stance, not a defect.
+const W2_POSTURE := {
+	"W2_Stand_Relaxed_Idle_v2": -14.0,
+}
+
 # The Quaternius locomotion cycles read more theatrical than the Days Gone
 # reference gait the user pointed at. Three measured compressions, all
 # "scale deviation around the track's own mean" (character preserved, motion
@@ -181,6 +200,24 @@ func _apply_posture_bias(anim: Animation) -> void:
 		"Chest": POSTURE_CHEST_PITCH,
 		"UpperChest": POSTURE_UPPER_CHEST_PITCH,
 	}
+	for t in anim.get_track_count():
+		if anim.track_get_type(t) != Animation.TYPE_ROTATION_3D:
+			continue
+		var bone := String(anim.track_get_path(t)).get_slice(":", 1)
+		if not bias.has(bone):
+			continue
+		var q := Quaternion(Vector3.RIGHT, deg_to_rad(bias[bone]))
+		for k in anim.track_get_key_count(t):
+			var rot: Quaternion = anim.track_get_key_value(t, k)
+			anim.track_set_key_value(t, k, q * rot)
+
+
+# Bake a total spine-chain pitch onto one clip, split evenly across the
+# three spine segments (same left-multiplication as _apply_posture_bias, so
+# it commutes with blending against uncorrected clips).
+func _apply_pitch_bias(anim: Animation, total_deg: float) -> void:
+	var per := total_deg / 3.0
+	var bias := {"Spine": per, "Chest": per, "UpperChest": per}
 	for t in anim.get_track_count():
 		if anim.track_get_type(t) != Animation.TYPE_ROTATION_3D:
 			continue
@@ -378,6 +415,8 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 					_reduce_bob(anim)
 				if key.begins_with("UAL_"):
 					_apply_posture_bias(anim)
+				if W2_POSTURE.has(key):
+					_apply_pitch_bias(anim, W2_POSTURE[key])
 				if lib.has_animation(key):
 					push_error("duplicate clip name " + key + " from " + f)
 					continue

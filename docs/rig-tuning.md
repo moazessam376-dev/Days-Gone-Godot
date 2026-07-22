@@ -135,21 +135,41 @@ off = −0.9°; the LookAt residuals measured under 1°.
 live-tuning override only. If a future clip family hunches, bake its own
 correction at build time — do not turn the global sliders back on.
 
-## Assault rifle — measured seeds, awaiting the calibration session (2026-07-23)
+## Assault rifle — calibrated by measurement + screenshots (2026-07-23)
 
-Everything on `resources/weapons/assault_rifle.tres` is a **seed**, not a
-calibration: enough to put the rifle recognisably in the hands and on the
-back so the gizmos start somewhere sane.
+Calibrated in a measured screenshot loop (`tools/rig/visual_shots.tscn` —
+runs the real game windowed, injects input, captures every weapon state;
+the MCP-free window into what the player sees). The user's playtest still
+gates the feel; every value below has a live gizmo/slider for finishing.
 
-| Value | Seed | How it was derived |
+| Value | Final | Why |
 |---|---|---|
-| socket basis | revolver's measured basis | Overwrite Axis normalised the hand bone, so one pistol-grip orientation transfers to first order |
-| `mesh_offset` | `(0.014, 0.083, 0.096)` | negated grip centroid (112 verts, y < −0.02, −0.12 < z < 0.02) + the revolver's hand-finish delta |
-| `support_grip_pos` | `(0.064, 0.043, 0.376)` | under the handguard (underside y 0.019, centre z 0.28), wrist left of and below the surface |
-| stow (BackStow) | pos `(-0.18, -0.30, -0.16)`, rot `(-50, 90, -90)` | grip at the lower back right, barrel up-left diagonal — measured barrel_dir (0.64, 0.77, 0) in the running scene |
-| curls / wrist | all zero | rifle clips are genuinely two-handed; pure mocap until the user sees it |
+| socket basis | revolver basis × Rx(+19.8°) | the revolver basis raw held the rifle muzzle +19.8° skyward in ADS (probed in the running game); the rotation levels ADS at 0.0° measured, carry rakes −42° (fine for a low carry) |
+| `mesh_offset` | `(0.014, 0.083, 0.096)` | negated grip centroid (112 verts) + the revolver's hand-finish delta |
+| `support_grip_pos` | `(0.06, 0.055, 0.33)` | rear third of the handguard; a far-forward target straightened the elbow (user: "left arm is getting a bit extended") |
+| curls | thumb 25 / index 30 / middle 35 | mocap held MotusMan's foregrip — fingers read flat on the Synty AK; coarse wrap, user fine-finishes |
+| stow (BackStow) | pos `(-0.18, -0.30, -0.16)`, rot `(-50, 90, -90)` | grip lower back right, barrel up-left diagonal, hugging the back |
 
-The user's calibration session covers: rifle socket + grip + curls, and
-back/hip stow placement. Bake results into `tools/build_weapons.gd` (with
-reasons here), re-run it and `build_character.gd`, diff-check nothing
-reverts.
+Revolver hip stow: pos `(-0.26, 0.03, -0.09)`, rot `(72, 0, 8)` — first
+seed sat inside the thigh ("visibly going on the leg"); moved outboard, up,
+and tilted back until the front view cleared the leg.
+
+## Rifle animation fixes — measured, baked at build time (2026-07-23)
+
+Both were diagnosed by the clip sweep (`godot-animation-pipeline` skill):
+
+- **`R_Carry_Jog_F` is not a carry** — it jogs with the rifle raised to a
+  high ready (left wrist +0.50 m above hips, upper arm 73°; user: "the
+  weapon is aimed on jogging"). Fix is the SAME composite as the pistol
+  carry: `RifleCarry` = Blend2, body/legs from the gait space, BOTH clavicle
+  subtrees held on `W2_Stand_Relaxed_Idle_v2` (`rifle_carry_arm_lock`,
+  default 1.0). The support-hand IK now stays ON during rifle carry (it is
+  two-handed), welding the left palm to the handguard at every gait — the
+  pistol keeps IK aim-only.
+- **`W2_Stand_Relaxed_Idle_v2` leans +5.2° vs the approved U_Idle −4.4°**
+  ("leaning forward weirdly with the rifle") → `W2_POSTURE` bakes −14°
+  across the spine chain (lands −2.9°; the lean responds at ~0.59× the
+  baked total). The W2 **aim** clips are deliberately NOT corrected:
+  leveling the aim spine rotates the gun up with it — a −16.5° bias read as
+  the rifle aiming 35° skyward, screenshot-verified, and the aim stance's
+  own forward lean reads as intent, not defect.
