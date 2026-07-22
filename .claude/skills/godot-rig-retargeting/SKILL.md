@@ -1,6 +1,6 @@
 ---
 name: godot-rig-retargeting
-description: Read BEFORE importing a character or animation FBX, editing a BoneMap, adding a SkeletonModifier3D (TwoBoneIK3D, LookAtModifier3D), or attaching a weapon to a bone. Covers the working retarget pipeline for Synty + MoCap Online rigs and the verification traps that produce confidently wrong conclusions. Use when importing the Rifle Pro pack, the zombie set, or any new character.
+description: Read BEFORE importing a character or animation FBX, editing a BoneMap, adding a SkeletonModifier3D (TwoBoneIK3D, LookAtModifier3D), attaching a weapon to a bone, or diagnosing a pose that is wrong in game but clean in the raw clip. Covers the working retarget pipeline for Synty + MoCap Online rigs, the probe A/B method for attributing a bad pose to its modifier, and the verification traps that produce confidently wrong conclusions. Use when importing the Rifle Pro pack, the zombie set, or any new character.
 ---
 
 # Retargeting and skeleton modifiers in this project
@@ -114,6 +114,27 @@ that had to be corrected. Counting the signal showed it firing **1892 times**.
 - Judge the RESULT on screen, via MCP `screenshot_game`.
 - To sanity-check the maths in isolation, call the modifier's method by hand and
   compare before/after — that path does reflect writes.
+
+## Attributing a wrong pose to its modifier — the probe A/B method
+
+When the pose is wrong in game but the raw clip measures clean, find the
+guilty modifier in minutes instead of guessing:
+
+1. **`BoneAttachment3D` follows the POST-modifier pose** (it is how weapons
+   attach — proven). Via `godot_exec`, attach probe nodes on the suspect
+   bones in the running game and read pitch/direction off their global basis.
+   This is the only cheap numeric read of what the player actually sees.
+2. Toggle ONE modifier's `active` off per step (`godot_exec`), re-read the
+   probes, and screenshot from the SAME camera. The numbers attribute the
+   fault; the paired screenshots prove it visually.
+3. Note: player.gd re-writes some modifier `influence`s every frame — toggle
+   `active`, not `influence`, or your override is erased within a frame.
+
+This method pinned an 11-degree head/chest pitch on `PostureAdjust` in two
+toggles (LookAt residuals measured under 1 degree and were exonerated). Bone
+numbers and screen can disagree — a level head BONE can still read chin-up on
+the MESH — so always pair the probe numbers with a same-camera screenshot
+before and after.
 
 ## Verify the thing that actually runs
 

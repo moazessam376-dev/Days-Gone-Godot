@@ -79,6 +79,13 @@ _(Grows as phases land. Keep this section honest — it is the map future sessio
   Overwrite Axis** on import, not a new offset.
 - **Skeleton modifier order matters.** `LookAtModifier3D` (torso aim) runs *before* `TwoBoneIK3D`
   (support hand on the foregrip), so the IK solves against the already-rotated torso.
+- **Clip corrections are per clip family, baked at build time** in `tools/build_character.gd`
+  (root collapse, W2 position fix, UAL posture/bob) — never applied as a skeleton-wide runtime
+  modifier. A fix tuned against one family's quirk breaks every clean clip: the global
+  `PostureAdjust` pitched the level-headed `U_Idle` carry 11° skyward.
+- **Animation clips are chosen by measured pose, never by name.** `UAL_Pistol_Idle` is a
+  two-handed ready stance, not an idle; the name cost a playtest round, a 30-second sweep
+  would have caught it. See `.claude/skills/godot-animation-pipeline/`.
 - **All tuning constants live in one place**, grouped by system, and are exposed for live tuning.
   Never hardcode a feel constant at a call site.
 - **Data-driven weapons** — stats, sockets and IK targets on a `WeaponResource`, not in code.
@@ -161,6 +168,9 @@ truth.
 - `Skeleton3D.get_bone_global_pose()` returns the pose from **before** the modifier stack. Working
   modifiers read as exact no-ops. This produced a wrong conclusion, a workaround built on it, and a
   commit that had to be corrected. **Count `modification_processed`; judge the result on screen.**
+  For a numeric read of the pose the player actually sees, attach a `BoneAttachment3D` probe in the
+  running game (it follows the post-modifier pose) and A/B modifiers one at a time — this attributed
+  the skyward-head bug in two toggles. Full method: `.claude/skills/godot-rig-retargeting/`.
 - A pose test read the FBX's own `AnimationPlayer` instead of ours after a silent name collision,
   and reported a perfect T-pose.
 
@@ -175,7 +185,12 @@ Read these before the matching task; each encodes failures that already cost thi
   running a scene generator. Editor overwrites, `Transform3D` column-wise serialisation, instanced
   scene duplication, generator overwrite.
 - **`.claude/skills/godot-rig-retargeting/`** — before importing a character or animation FBX,
-  editing a BoneMap, adding a `SkeletonModifier3D`, or attaching a weapon to a bone.
+  editing a BoneMap, adding a `SkeletonModifier3D`, attaching a weapon to a bone, or diagnosing a
+  pose that is wrong in game but clean in the raw clip (probe A/B method lives here).
+- **`.claude/skills/godot-animation-pipeline/`** — before choosing/downloading animation clips,
+  adding a clip source to `build_character.gd`, editing `build_anim_tree.gd` or AnimationTree
+  blends, or diagnosing a wrong pose/gait. Clip selection by measurement, per-family build-time
+  corrections, filtered-blend composition, dual-mixer conflicts.
 
 ## Workflow
 
