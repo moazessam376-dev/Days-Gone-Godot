@@ -75,15 +75,21 @@ with arc trace, reticle-only-in-ADS.
 ### Phase 4 — Audio
 Real sourced SFX — gunshots per weapon, impacts, footsteps by surface, zombie vocals, ambience, UI.
 Godot audio buses with reverb and `AudioStreamPlayer3D` positioning. The old game synthesized every
-sound in WebAudio and shipped zero audio files; that is not repeated. Source selection gets its own
-short decision session.
+sound in WebAudio and shipped zero audio files; that is not repeated.
+**Sources decided 2026-07-23** (`docs/research-audio-sources.md`): Pro Sound Collection purchased
+(guns/impacts/explosions/UI), CC0 Nox_Sound footsteps + Kenney UI, Cafofo zombie free tier (Pro at
+Phase 7), Sonniss GDC as free backfill. Packs stay zipped in `assets/_raw/audio/` until this
+phase's build session.
 
 ### Phase 5 — Physics & collision  (was R0)
 Port `docs/collision-matrix.md` onto Jolt layers as the single source of truth. Godot handles
 natively most of what R0 hand-built.
 
 ### Phase 6 — World  (was R2c)
-Synty town (barricaded main street), roads, props, wrecks, nature. Layout spec'd with the user first.
+Synty town (barricaded main street), roads, props, wrecks, nature.
+**Layout spec'd with the user 2026-07-22** (`docs/r2c-world-layout.md`): forest road spine linking
+home base (spawn) → fuel station → barricaded town with Diner/Motel/AutoRepair/Church, RadioTower
+landmark, destroyed-motorway skyline. No further Synty purchases needed for this slice.
 
 ### Phase 7 — Enemy AI depth  (was R4)
 Perception (sight/sound, not omniscient), idle/wander/aggro states, horde pathing, hit reactions,
