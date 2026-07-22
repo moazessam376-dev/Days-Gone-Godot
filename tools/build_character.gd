@@ -482,10 +482,17 @@ func _build_test_level() -> bool:
 	print("TESTLEVEL  saved=", OUT_TEST, " err=", err)
 
 	if err == OK:
-		ProjectSettings.set_setting("application/run/main_scene", OUT_TEST)
-		var perr := ProjectSettings.save()
-		print("TESTLEVEL  main_scene set, save err=", perr)
-		return perr == OK
+		# Phase 2 owns the main scene (scenes/levels/test_range.tscn). Only
+		# claim it if the project has none — a rebuild must never silently
+		# repoint the game at the rig-calibration scene.
+		var current: String = ProjectSettings.get_setting("application/run/main_scene", "")
+		if current == "":
+			ProjectSettings.set_setting("application/run/main_scene", OUT_TEST)
+			var perr := ProjectSettings.save()
+			print("TESTLEVEL  main_scene claimed, save err=", perr)
+			return perr == OK
+		print("TESTLEVEL  main_scene left as ", current)
+		return true
 	return false
 
 
