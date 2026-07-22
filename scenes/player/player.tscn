@@ -1,10 +1,13 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/player/camera_rig.gd" id="2_camrig"]
 [ext_resource type="PackedScene" path="res://scenes/characters/hunter.tscn" id="3_hunter"]
 [ext_resource type="Resource" path="res://resources/tuning/player_tuning.tres" id="4_tuning"]
 [ext_resource type="AnimationNodeBlendTree" path="res://resources/animation/player_anim_tree.tres" id="5_animtree"]
+[ext_resource type="Script" path="res://scripts/player/weapon_manager.gd" id="6_weapmgr"]
+[ext_resource type="Resource" path="res://resources/weapons/revolver.tres" id="7_revolver"]
+[ext_resource type="Resource" path="res://resources/weapons/assault_rifle.tres" id="8_ar"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.3
@@ -21,6 +24,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("capsule")
 
 [node name="Hunter" parent="." instance=ExtResource("3_hunter")]
+
+[node name="WeaponManager" type="Node" parent="."]
+script = ExtResource("6_weapmgr")
+weapons = [ExtResource("7_revolver"), ExtResource("8_ar")]
+tuning = ExtResource("4_tuning")
 
 [node name="AnimationTree" type="AnimationTree" parent="."]
 root_node = NodePath("../Hunter")

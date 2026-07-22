@@ -1,12 +1,13 @@
 extends CharacterBody3D
 
 # Phase 2 player: camera-relative movement on a CharacterBody3D, driving the
-# AnimationTree (locomotion blend spaces, stance/weapon blends) and the
-# torso/head LookAt aim.
+# AnimationTree's locomotion axes (blend positions, stance, carry arm lock)
+# and the torso/head LookAt aim. The WeaponManager sibling owns the weapon
+# axes (WeaponBlend / HolsterBlend / one-shot pickers), switching and stow.
 # Carry: the body turns to face where it moves. ADS (hold `aim`): the body
-# faces the camera and movement becomes strafing at walk speed.
-# Deliberately NOT here yet: sprint/roll/jump (Phase 3), real weapon
-# switching (M3), firing/reload (M4).
+# faces the camera and movement becomes strafing at walk speed. ADS needs a
+# gun actually in the hand — while holstered the manager auto-draws first.
+# Deliberately NOT here yet: sprint/roll/jump (Phase 3), firing/reload (M4).
 
 ## Model-forward correction: the Synty character faces +Z, Godot bodies face
 ## -Z, so the visual yaw gets PI added on top of the movement heading.
@@ -24,8 +25,8 @@ const LOOKAT_CARRY := Vector2(0.15, 0.1)
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _stance := 0.0
-var _weapon := 0.0
 
+@onready var _weapons: WeaponManager = $WeaponManager
 @onready var _camera_rig: Node3D = $CameraRig
 @onready var _camera: Camera3D = $CameraRig/SpringArm3D/Camera3D
 @onready var _hunter: Node3D = $Hunter
@@ -56,15 +57,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	# Until M3's WeaponManager: 1/2 switch which animation set plays.
-	elif event.is_action_pressed("weapon_1"):
-		_weapon = 0.0
-	elif event.is_action_pressed("weapon_2"):
-		_weapon = 1.0
 
 
 func _physics_process(delta: float) -> void:
-	var ads := Input.is_action_pressed("aim")
+	# ADS requires a gun on screen: while holstered the WeaponManager
+	# auto-draws on `aim`, and the stance raise follows once the gun is in
+	# the hand; during a swap the crossfade stays in carry.
+	var ads := (
+		Input.is_action_pressed("aim") and _weapons.gun_in_hand() and not _weapons.is_swapping()
+	)
 	_camera_rig.ads = ads
 
 	var input_2d := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -126,10 +127,6 @@ func _update_anim_tree(ads: bool, delta: float) -> void:
 	_tree.set("parameters/Unarmed/blend_position", carry_pos)
 	_tree.set("parameters/PistolMove/blend_amount", _stance)
 	_tree.set("parameters/RifleMove/blend_amount", _stance)
-	_tree.set("parameters/WeaponBlend/blend_amount", _weapon)
-	_tree.set("parameters/FireClip/blend_amount", _weapon)
-	_tree.set("parameters/ReloadClip/blend_amount", _weapon)
-	_tree.set("parameters/HolsterBlend/blend_amount", 0.0)
 
 
 func _update_aim(ads: bool, delta: float) -> void:
