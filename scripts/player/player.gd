@@ -33,6 +33,8 @@ var _weapon := 0.0
 @onready var _aim_target: Node3D = $Hunter/AimTarget
 @onready var _torso_look: SkeletonModifier3D = $Hunter/GeneralSkeleton/TorsoLookAt
 @onready var _head_look: SkeletonModifier3D = $Hunter/GeneralSkeleton/HeadLookAt
+@onready var _left_ik: SkeletonModifier3D = $Hunter/GeneralSkeleton/LeftArmIK
+@onready var _hand_tuner: SkeletonModifier3D = $Hunter/GeneralSkeleton/SupportHandTuner
 
 
 func _ready() -> void:
@@ -113,7 +115,13 @@ func _update_anim_tree(ads: bool, delta: float) -> void:
 
 	_tree.set("parameters/PistolAim/blend_position", aim_pos)
 	_tree.set("parameters/RifleAim/blend_position", aim_pos)
-	_tree.set("parameters/PistolCarry/blend_position", carry_pos)
+	_tree.set("parameters/PistolCarryLegs/blend_position", carry_pos)
+	# Composite carry: body from the walk space, gun arm held hanging by the
+	# side (see build_anim_tree.gd); lock strength is live-tunable. The inner
+	# finger blend (grip fingers over the unarmed idle's open hand) stays
+	# fully on.
+	_tree.set("parameters/PistolCarry/blend_amount", tuning.pistol_carry_arm_lock)
+	_tree.set("parameters/PistolCarryUpper/blend_amount", 1.0)
 	_tree.set("parameters/RifleCarry/blend_position", carry_pos)
 	_tree.set("parameters/Unarmed/blend_position", carry_pos)
 	_tree.set("parameters/PistolMove/blend_amount", _stance)
@@ -133,3 +141,10 @@ func _update_aim(ads: bool, delta: float) -> void:
 	var w := 1.0 - exp(-3.0 * delta / maxf(tuning.aim_raise_time, 0.01))
 	_torso_look.influence = lerpf(_torso_look.influence, goal.x, w)
 	_head_look.influence = lerpf(_head_look.influence, goal.y, w)
+
+	# The support hand belongs on the gun ONLY while aiming. During carry the
+	# IK chased the grip across the body ("left hand going through the body"
+	# — user); off-aim the left arm plays its natural animated swing instead.
+	var ik_goal := 1.0 if ads else 0.0
+	_left_ik.influence = lerpf(_left_ik.influence, ik_goal, w)
+	_hand_tuner.influence = _left_ik.influence

@@ -28,6 +28,7 @@ extends SceneTree
 const SYNTY_MAP := "res://resources/rigs/synty_apocalypse_bonemap.tres"
 const MOTUS_MAP := "res://resources/rigs/motusman_v55_bonemap.tres"
 const MIXAMO_MAP := "res://resources/rigs/mixamo_bonemap.tres"
+const QUAT_MAP := "res://resources/rigs/quaternius_ual_bonemap.tres"
 
 const TARGETS := [
 	{"fbx": "res://assets/characters/Characters.fbx", "map": SYNTY_MAP, "anim": false},
@@ -41,6 +42,9 @@ const TARGETS := [
 	{"dir": "res://assets/animations/pistol_extra", "map": MIXAMO_MAP, "anim": true},
 	{"dir": "res://assets/animations/unarmed", "map": MIXAMO_MAP, "anim": true},
 	{"fbx": "res://assets/rigs/XBot_TPose.fbx", "map": MIXAMO_MAP, "anim": false},
+	# Quaternius Universal Animation Library (CC0): neutral locomotion + the
+	# free pistol set, one GLB holding ~43 clips on a UE-mannequin rig.
+	{"fbx": "res://assets/animations/ual/UAL1_Standard.glb", "map": QUAT_MAP, "anim": true},
 ]
 
 

@@ -35,13 +35,24 @@ extends SceneTree
 const CHARACTER := "res://scenes/characters/hunter.tscn"
 const OUT := "res://resources/animation/player_anim_tree.tres"
 
-# Pistol carry uses the unarmed walk/jog: no free relaxed pistol locomotion
-# exists (Mixamo's "pistol walk" clips are all two-handed aim walks), and the
-# aim-pose placeholders read as "always aiming" — the user flagged it. Arms
-# swing with the revolver in hand, the Days Gone low-carry look.
-const PISTOL_CARRY := ["W1_Stand_Relaxed_Idle_IPC", "U_Walk_F", "U_Jog_F"]
+# Pistol carry is a COMPOSITE of real clips: body from Quaternius' CC0
+# neutral walk/jog (the Mixamo "Walking"/"Jogging" clips sway too much —
+# "very zesty" per the user), with ONLY the right (gun) arm held on the
+# Mixamo unarmed standing idle. Chosen by MEASUREMENT, not name: U_Idle
+# hangs both arms by the side (upper-arm tilt ~9 deg from vertical, elbow
+# ~170 deg, hands below hip line, stable across all 8.3 s) — the user's
+# requested neutral. UAL_Pistol_Idle, despite the name, is a two-handed
+# READY pose (right hand 0.53 m ABOVE the hips) and W1's relaxed idle holds
+# the gun two-handed in front; both failed user review. On top of the
+# hanging arm, ONLY the finger bones are held on the W1 pistol-grip idle so
+# the revolver sits in a wrapped hand instead of floating in the unarmed
+# clip's open palm. Composing sourced clips at the tree level is NOT the
+# forbidden pose synthesis: every input is unedited mocap.
+const PISTOL_CARRY := ["U_Idle", "UAL_Walk", "UAL_Jog_Fwd"]
+const PISTOL_CARRY_UPPER := "U_Idle"
+const PISTOL_CARRY_GRIP := "W1_Stand_Aim_Idle_IPC"
 const RIFLE_CARRY := ["W2_Stand_Relaxed_Idle_v2", "R_Carry_Walk_F", "R_Carry_Jog_F"]
-const UNARMED := ["U_Idle", "U_Walk_F", "U_Jog_F"]
+const UNARMED := ["UAL_Idle", "UAL_Walk", "UAL_Jog_Fwd"]
 
 # [clip, x, y]
 const PISTOL_AIM := [
@@ -64,15 +75,42 @@ const RELOAD_CLIPS := ["W1_Reload", "R_Reload"]
 
 
 func _init() -> void:
-	var filter_paths := _upper_body_paths()
-	if filter_paths.is_empty():
-		push_error("could not measure upper-body bones")
+	var filter_paths := _subtree_paths("Spine")
+	var right_arm_paths := _subtree_paths("RightShoulder")
+	var finger_paths := _subtree_paths("RightHand")
+	finger_paths = finger_paths.filter(func(p: String) -> bool: return not p.ends_with(":RightHand"))
+	if filter_paths.is_empty() or right_arm_paths.is_empty() or finger_paths.is_empty():
+		push_error("could not measure filter bones")
 		quit(1)
 		return
 
 	var tree := AnimationNodeBlendTree.new()
 
-	tree.add_node("PistolCarry", _space_1d(PISTOL_CARRY), Vector2(-600, -200))
+	# PistolCarryUpper = the gun arm's held pose: the hanging U_Idle arm with
+	# ONLY the finger bones (RightHand subtree minus the wrist) overridden by
+	# the W1 pistol-grip idle. blend_amount pinned to 1.0 by player.gd.
+	tree.add_node("CarryArmPose", _anim(PISTOL_CARRY_UPPER), Vector2(-1000, -180))
+	tree.add_node("CarryGrip", _anim(PISTOL_CARRY_GRIP), Vector2(-1000, -80))
+	var finger_mix := AnimationNodeBlend2.new()
+	finger_mix.filter_enabled = true
+	for p in finger_paths:
+		finger_mix.set_filter_path(p, true)
+	tree.add_node("PistolCarryUpper", finger_mix, Vector2(-800, -150))
+	tree.connect_node("PistolCarryUpper", 0, "CarryArmPose")
+	tree.connect_node("PistolCarryUpper", 1, "CarryGrip")
+
+	# PistolCarry = Blend2 with a RIGHT-ARM filter: unfiltered tracks (body,
+	# legs, left arm) come from the walk/jog space, filtered tracks (the gun
+	# arm) hold the composed carry pose. blend_amount = the live-tunable
+	# pistol_carry_arm_lock.
+	tree.add_node("PistolCarryLegs", _space_1d(PISTOL_CARRY), Vector2(-800, -250))
+	var carry_mix := AnimationNodeBlend2.new()
+	carry_mix.filter_enabled = true
+	for p in right_arm_paths:
+		carry_mix.set_filter_path(p, true)
+	tree.add_node("PistolCarry", carry_mix, Vector2(-600, -200))
+	tree.connect_node("PistolCarry", 0, "PistolCarryLegs")
+	tree.connect_node("PistolCarry", 1, "PistolCarryUpper")
 	tree.add_node("RifleCarry", _space_1d(RIFLE_CARRY), Vector2(-600, 0))
 	tree.add_node("Unarmed", _space_1d(UNARMED), Vector2(-600, 200))
 	tree.add_node("PistolAim", _space_2d(PISTOL_AIM), Vector2(-600, -300))
@@ -149,9 +187,10 @@ func _one_shot(filter_paths: Array[String]) -> AnimationNodeOneShot:
 	return shot
 
 
-# The upper body = the Spine subtree, measured off the real skeleton so the
-# list survives BoneMap changes. Legs and Hips stay unfiltered.
-func _upper_body_paths() -> Array[String]:
+# Track paths for a bone subtree, measured off the real skeleton so lists
+# survive BoneMap changes. "Spine" = the upper body (legs/hips unfiltered);
+# "RightShoulder" = the gun arm.
+func _subtree_paths(root_bone: String) -> Array[String]:
 	var out: Array[String] = []
 	var ps: PackedScene = load(CHARACTER)
 	if ps == null:
@@ -160,7 +199,7 @@ func _upper_body_paths() -> Array[String]:
 	var skel: Skeleton3D = hunter.get_node("%GeneralSkeleton")
 	if skel == null:
 		return out
-	var stack := [skel.find_bone("Spine")]
+	var stack := [skel.find_bone(root_bone)]
 	while stack.size() > 0:
 		var b: int = stack.pop_back()
 		out.append("%GeneralSkeleton:" + skel.get_bone_name(b))
