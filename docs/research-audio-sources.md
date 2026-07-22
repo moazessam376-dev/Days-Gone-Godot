@@ -34,8 +34,12 @@ Foley Sounds, Human Vocalizations**, fire/electricity/water, buttons/collectible
 punches, and more. Royalty-free for commercial games.
 
 - Covers: **A1, A2, A3, A4 (backup), A7** in one purchase, plus player hurt/effort vocals.
-- Buy **direct or via the Godot marketplace**, not the Unity Asset Store — same $47, but the
-  Unity EULA ties Asset Store purchases to Unity projects; the direct license has no engine tie.
+- Any purchase channel is fine, **including the Unity Asset Store**: Unity's own support FAQ
+  confirms Asset Store assets may be used in other engines under the standard EULA
+  (non-restricted assets — which standard third-party packs like this are), provided they ship
+  embedded in the game, never redistributed raw. *(Corrected 2026-07-23 — an earlier draft of
+  this doc claimed a Unity-only tie.)* Delivery may be a `.unitypackage`: same tar.gz format as
+  the Synty packs, extracted in `assets/_raw/` staging the same way during the Phase 4 build.
 - Not confirmed to contain zombie vocals (the bundled packs list has none) → A5 is sourced
   separately below.
 - Risk: 8k sounds averaging ~1.4 s each — these are game one-shots, not cinematic layers. If a
@@ -89,12 +93,12 @@ redistributed)" section for audio when files land.
   to avoid the machine-gun-repetition tell.
 - M1 8 GB budget: keep sources 44.1 kHz/16-bit in-game; the 96/24 masters stay in `assets/_raw`.
 
-## Decisions for the user
+## Decisions — locked with the user 2026-07-23
 
-| # | Decision | Proposal |
+| # | Decision | Outcome |
 |---|---|---|
-| DA1 | The one purchase | Buy **Pro Sound Collection ($47, direct or Godot marketplace)** as the game's SFX workhorse |
-| DA2 | Guns | Pro Sound Collection shots + free Sonniss layers first; BOOM-tier upgrade **only after a failed playtest** |
-| DA3 | Zombies | Cafofo **Free now**, **Pro (~$25) deferred to Phase 7** |
+| DA1 | The one purchase | ✅ **Pro Sound Collection purchased** (delivered as `.unitypackage`; stays zipped in `assets/_raw/audio/` until the Phase 4 build session) |
+| DA2 | Guns | ✅ Default accepted: Pro Sound Collection shots + free Sonniss layers first; BOOM-tier upgrade **only after a failed playtest** |
+| DA3 | Zombies | ✅ Default accepted: Cafofo **Free now**, **Pro (~$25) deferred to Phase 7** |
 
-Total to spend now: **$47**. Everything else in the default plan is free.
+Total spent: **$47**. Everything else in the plan is free.
