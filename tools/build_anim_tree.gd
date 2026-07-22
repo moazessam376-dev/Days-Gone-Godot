@@ -78,7 +78,9 @@ func _init() -> void:
 	var filter_paths := _subtree_paths("Spine")
 	var right_arm_paths := _subtree_paths("RightShoulder")
 	var finger_paths := _subtree_paths("RightHand")
-	finger_paths = finger_paths.filter(func(p: String) -> bool: return not p.ends_with(":RightHand"))
+	finger_paths = finger_paths.filter(
+		func(p: String) -> bool: return not p.ends_with(":RightHand")
+	)
 	if filter_paths.is_empty() or right_arm_paths.is_empty() or finger_paths.is_empty():
 		push_error("could not measure filter bones")
 		quit(1)
@@ -164,9 +166,11 @@ func _space_1d(clips: Array) -> AnimationNodeBlendSpace1D:
 	var space := AnimationNodeBlendSpace1D.new()
 	space.min_space = 0.0
 	space.max_space = 1.0
-	var positions := [0.0, 0.5, 1.0]
+	# Evenly spaced over 0..1 regardless of clip count (a hardcoded 3-point
+	# table crashed on the day a 4th gait clip appeared — issue #10).
+	var last := maxi(clips.size() - 1, 1)
 	for i in clips.size():
-		space.add_blend_point(_anim(clips[i]), positions[i])
+		space.add_blend_point(_anim(clips[i]), float(i) / float(last))
 	return space
 
 
@@ -199,7 +203,14 @@ func _subtree_paths(root_bone: String) -> Array[String]:
 	var skel: Skeleton3D = hunter.get_node("%GeneralSkeleton")
 	if skel == null:
 		return out
-	var stack := [skel.find_bone(root_bone)]
+	# A BoneMap rename must fail loudly here, not emit a junk filter list
+	# built from index -1 (issue #10).
+	var root_idx := skel.find_bone(root_bone)
+	if root_idx == -1:
+		push_error("filter root bone not found: " + root_bone)
+		hunter.free()
+		return out
+	var stack := [root_idx]
 	while stack.size() > 0:
 		var b: int = stack.pop_back()
 		out.append("%GeneralSkeleton:" + skel.get_bone_name(b))
