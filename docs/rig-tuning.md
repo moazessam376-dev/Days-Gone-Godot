@@ -101,3 +101,21 @@ The curls are large because they are corrections against a MotusMan hand
 posed for a 1911, transferred to a three-fingered Synty hand holding a
 revolver. That is the residual retargeting cannot fix, and it is exactly what
 this layer exists for.
+
+## Posture correction — per clip family, never skeleton-wide (2026-07-23)
+
+The Quaternius UAL clips carry a forward hunch in the source rig (head
+pitched ~30° down, measured). The correction — spine −3°, chest −4°,
+upper-chest −4° — is **baked into the `UAL_*` clips' rotation keys** by
+`_apply_posture_bias()` in `tools/build_character.gd`.
+
+It was first shipped as a runtime `PostureAdjust` modifier applied to every
+clip, which broke the moment a *clean* clip entered the graph: `U_Idle`
+(level head, upright spine) got the same +11° backward push and the
+character stood facing the sky. Attribution was a post-modifier
+`BoneAttachment3D` probe A/B in the running game: modifier on = head +10.8°,
+off = −0.9°; the LookAt residuals measured under 1°.
+
+`PostureAdjust` stays in the scene with **all pitches zeroed** as a
+live-tuning override only. If a future clip family hunches, bake its own
+correction at build time — do not turn the global sliders back on.

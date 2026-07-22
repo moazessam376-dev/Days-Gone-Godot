@@ -1,0 +1,219 @@
+[gd_resource type="AnimationNodeBlendTree" format=3]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_0srs7"]
+animation = &"U_Idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_lbp1c"]
+animation = &"W1_Stand_Aim_Idle_IPC"
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_5m208"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_7mxse"]
+animation = &"W1_Stand_Fire_Single"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_hqsjd"]
+animation = &"R_Fire"
+
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_xfovx"]
+filter_enabled = true
+filters = ["%GeneralSkeleton:Chest", "%GeneralSkeleton:Eyebrows", "%GeneralSkeleton:Eyes", "%GeneralSkeleton:Finger_04", "%GeneralSkeleton:Finger_04_2", "%GeneralSkeleton:Head", "%GeneralSkeleton:IndexFinger_04", "%GeneralSkeleton:IndexFinger_04_2", "%GeneralSkeleton:Jaw", "%GeneralSkeleton:LeftHand", "%GeneralSkeleton:LeftIndexDistal", "%GeneralSkeleton:LeftIndexIntermediate", "%GeneralSkeleton:LeftIndexProximal", "%GeneralSkeleton:LeftLowerArm", "%GeneralSkeleton:LeftMiddleDistal", "%GeneralSkeleton:LeftMiddleIntermediate", "%GeneralSkeleton:LeftMiddleProximal", "%GeneralSkeleton:LeftShoulder", "%GeneralSkeleton:LeftThumbDistal", "%GeneralSkeleton:LeftThumbMetacarpal", "%GeneralSkeleton:LeftThumbProximal", "%GeneralSkeleton:LeftUpperArm", "%GeneralSkeleton:Neck", "%GeneralSkeleton:RightHand", "%GeneralSkeleton:RightIndexDistal", "%GeneralSkeleton:RightIndexIntermediate", "%GeneralSkeleton:RightIndexProximal", "%GeneralSkeleton:RightLowerArm", "%GeneralSkeleton:RightMiddleDistal", "%GeneralSkeleton:RightMiddleIntermediate", "%GeneralSkeleton:RightMiddleProximal", "%GeneralSkeleton:RightShoulder", "%GeneralSkeleton:RightThumbDistal", "%GeneralSkeleton:RightThumbMetacarpal", "%GeneralSkeleton:RightThumbProximal", "%GeneralSkeleton:RightUpperArm", "%GeneralSkeleton:Spine", "%GeneralSkeleton:UpperChest"]
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_hcfsq"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_wsslp"]
+animation = &"W1_Stand_Aim_Idle_IPC"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_y7asm"]
+animation = &"W1_Walk_Aim_F_Loop_IPC"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_oro2x"]
+animation = &"W1_Aim_Walk_B"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8ly2v"]
+animation = &"W1_Aim_Strafe_A"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_xm5id"]
+animation = &"W1_Aim_Strafe_B"
+
+[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_wxp4r"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_wsslp")
+blend_point_0/pos = Vector2(0, 0)
+blend_point_0/name = &"0"
+blend_point_1/node = SubResource("AnimationNodeAnimation_y7asm")
+blend_point_1/pos = Vector2(0, 1)
+blend_point_1/name = &"1"
+blend_point_2/node = SubResource("AnimationNodeAnimation_oro2x")
+blend_point_2/pos = Vector2(0, -1)
+blend_point_2/name = &"2"
+blend_point_3/node = SubResource("AnimationNodeAnimation_8ly2v")
+blend_point_3/pos = Vector2(-1, 0)
+blend_point_3/name = &"3"
+blend_point_4/node = SubResource("AnimationNodeAnimation_xm5id")
+blend_point_4/pos = Vector2(1, 0)
+blend_point_4/name = &"4"
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_e4pg2"]
+filter_enabled = true
+filters = ["%GeneralSkeleton:Finger_04_2", "%GeneralSkeleton:IndexFinger_04_2", "%GeneralSkeleton:RightHand", "%GeneralSkeleton:RightIndexDistal", "%GeneralSkeleton:RightIndexIntermediate", "%GeneralSkeleton:RightIndexProximal", "%GeneralSkeleton:RightLowerArm", "%GeneralSkeleton:RightMiddleDistal", "%GeneralSkeleton:RightMiddleIntermediate", "%GeneralSkeleton:RightMiddleProximal", "%GeneralSkeleton:RightShoulder", "%GeneralSkeleton:RightThumbDistal", "%GeneralSkeleton:RightThumbMetacarpal", "%GeneralSkeleton:RightThumbProximal", "%GeneralSkeleton:RightUpperArm"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_brt1n"]
+animation = &"U_Idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_nu2p2"]
+animation = &"UAL_Walk"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_oddc8"]
+animation = &"UAL_Jog_Fwd"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_fpf8e"]
+min_space = 0.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_brt1n")
+blend_point_0/pos = 0.0
+blend_point_0/name = &"0"
+blend_point_1/node = SubResource("AnimationNodeAnimation_nu2p2")
+blend_point_1/pos = 0.5
+blend_point_1/name = &"1"
+blend_point_2/node = SubResource("AnimationNodeAnimation_oddc8")
+blend_point_2/pos = 1.0
+blend_point_2/name = &"2"
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_2yohh"]
+filter_enabled = true
+filters = ["%GeneralSkeleton:Finger_04_2", "%GeneralSkeleton:IndexFinger_04_2", "%GeneralSkeleton:RightIndexDistal", "%GeneralSkeleton:RightIndexIntermediate", "%GeneralSkeleton:RightIndexProximal", "%GeneralSkeleton:RightMiddleDistal", "%GeneralSkeleton:RightMiddleIntermediate", "%GeneralSkeleton:RightMiddleProximal", "%GeneralSkeleton:RightThumbDistal", "%GeneralSkeleton:RightThumbMetacarpal", "%GeneralSkeleton:RightThumbProximal"]
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_yqw7y"]
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_ecy84"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_awcmi"]
+animation = &"W1_Reload"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_xp4g0"]
+animation = &"R_Reload"
+
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_pblfv"]
+filter_enabled = true
+filters = ["%GeneralSkeleton:Chest", "%GeneralSkeleton:Eyebrows", "%GeneralSkeleton:Eyes", "%GeneralSkeleton:Finger_04", "%GeneralSkeleton:Finger_04_2", "%GeneralSkeleton:Head", "%GeneralSkeleton:IndexFinger_04", "%GeneralSkeleton:IndexFinger_04_2", "%GeneralSkeleton:Jaw", "%GeneralSkeleton:LeftHand", "%GeneralSkeleton:LeftIndexDistal", "%GeneralSkeleton:LeftIndexIntermediate", "%GeneralSkeleton:LeftIndexProximal", "%GeneralSkeleton:LeftLowerArm", "%GeneralSkeleton:LeftMiddleDistal", "%GeneralSkeleton:LeftMiddleIntermediate", "%GeneralSkeleton:LeftMiddleProximal", "%GeneralSkeleton:LeftShoulder", "%GeneralSkeleton:LeftThumbDistal", "%GeneralSkeleton:LeftThumbMetacarpal", "%GeneralSkeleton:LeftThumbProximal", "%GeneralSkeleton:LeftUpperArm", "%GeneralSkeleton:Neck", "%GeneralSkeleton:RightHand", "%GeneralSkeleton:RightIndexDistal", "%GeneralSkeleton:RightIndexIntermediate", "%GeneralSkeleton:RightIndexProximal", "%GeneralSkeleton:RightLowerArm", "%GeneralSkeleton:RightMiddleDistal", "%GeneralSkeleton:RightMiddleIntermediate", "%GeneralSkeleton:RightMiddleProximal", "%GeneralSkeleton:RightShoulder", "%GeneralSkeleton:RightThumbDistal", "%GeneralSkeleton:RightThumbMetacarpal", "%GeneralSkeleton:RightThumbProximal", "%GeneralSkeleton:RightUpperArm", "%GeneralSkeleton:Spine", "%GeneralSkeleton:UpperChest"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_a1bkj"]
+animation = &"W2_Stand_Aim_Idle_v2"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_fh84v"]
+animation = &"W2_Walk_Aim_F_Loop_IPC"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ye31t"]
+animation = &"R_Aim_Walk_B"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8i5op"]
+animation = &"R_Aim_Strafe_L"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_u8fc5"]
+animation = &"R_Aim_Strafe_R"
+
+[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_v4lpc"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_a1bkj")
+blend_point_0/pos = Vector2(0, 0)
+blend_point_0/name = &"0"
+blend_point_1/node = SubResource("AnimationNodeAnimation_fh84v")
+blend_point_1/pos = Vector2(0, 1)
+blend_point_1/name = &"1"
+blend_point_2/node = SubResource("AnimationNodeAnimation_ye31t")
+blend_point_2/pos = Vector2(0, -1)
+blend_point_2/name = &"2"
+blend_point_3/node = SubResource("AnimationNodeAnimation_8i5op")
+blend_point_3/pos = Vector2(-1, 0)
+blend_point_3/name = &"3"
+blend_point_4/node = SubResource("AnimationNodeAnimation_u8fc5")
+blend_point_4/pos = Vector2(1, 0)
+blend_point_4/name = &"4"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_pg5dp"]
+animation = &"W2_Stand_Relaxed_Idle_v2"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6govr"]
+animation = &"R_Carry_Walk_F"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_jr3nq"]
+animation = &"R_Carry_Jog_F"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_qrxk6"]
+min_space = 0.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_pg5dp")
+blend_point_0/pos = 0.0
+blend_point_0/name = &"0"
+blend_point_1/node = SubResource("AnimationNodeAnimation_6govr")
+blend_point_1/pos = 0.5
+blend_point_1/name = &"1"
+blend_point_2/node = SubResource("AnimationNodeAnimation_jr3nq")
+blend_point_2/pos = 1.0
+blend_point_2/name = &"2"
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_6lrxb"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_tqc4e"]
+animation = &"UAL_Idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ofl5e"]
+animation = &"UAL_Walk"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_koli3"]
+animation = &"UAL_Jog_Fwd"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_24xfx"]
+min_space = 0.0
+blend_point_0/node = SubResource("AnimationNodeAnimation_tqc4e")
+blend_point_0/pos = 0.0
+blend_point_0/name = &"0"
+blend_point_1/node = SubResource("AnimationNodeAnimation_ofl5e")
+blend_point_1/pos = 0.5
+blend_point_1/name = &"1"
+blend_point_2/node = SubResource("AnimationNodeAnimation_koli3")
+blend_point_2/pos = 1.0
+blend_point_2/name = &"2"
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_wcf6o"]
+
+[resource]
+nodes/CarryArmPose/node = SubResource("AnimationNodeAnimation_0srs7")
+nodes/CarryArmPose/position = Vector2(-1000, -180)
+nodes/CarryGrip/node = SubResource("AnimationNodeAnimation_lbp1c")
+nodes/CarryGrip/position = Vector2(-1000, -80)
+nodes/PistolCarryUpper/node = SubResource("AnimationNodeBlend2_2yohh")
+nodes/PistolCarryUpper/position = Vector2(-800, -150)
+nodes/PistolCarryLegs/node = SubResource("AnimationNodeBlendSpace1D_fpf8e")
+nodes/PistolCarryLegs/position = Vector2(-800, -250)
+nodes/PistolCarry/node = SubResource("AnimationNodeBlend2_e4pg2")
+nodes/PistolCarry/position = Vector2(-600, -200)
+nodes/RifleCarry/node = SubResource("AnimationNodeBlendSpace1D_qrxk6")
+nodes/RifleCarry/position = Vector2(-600, 0)
+nodes/Unarmed/node = SubResource("AnimationNodeBlendSpace1D_24xfx")
+nodes/Unarmed/position = Vector2(-600, 200)
+nodes/PistolAim/node = SubResource("AnimationNodeBlendSpace2D_wxp4r")
+nodes/PistolAim/position = Vector2(-600, -300)
+nodes/RifleAim/node = SubResource("AnimationNodeBlendSpace2D_v4lpc")
+nodes/RifleAim/position = Vector2(-600, -100)
+nodes/PistolMove/node = SubResource("AnimationNodeBlend2_yqw7y")
+nodes/PistolMove/position = Vector2(-400, -250)
+nodes/RifleMove/node = SubResource("AnimationNodeBlend2_6lrxb")
+nodes/RifleMove/position = Vector2(-400, -50)
+nodes/WeaponBlend/node = SubResource("AnimationNodeBlend2_wcf6o")
+nodes/WeaponBlend/position = Vector2(-200, -150)
+nodes/HolsterBlend/node = SubResource("AnimationNodeBlend2_hcfsq")
+nodes/HolsterBlend/position = Vector2(0, -50)
+nodes/FirePistol/node = SubResource("AnimationNodeAnimation_7mxse")
+nodes/FirePistol/position = Vector2(-200, -450)
+nodes/FireRifle/node = SubResource("AnimationNodeAnimation_hqsjd")
+nodes/FireRifle/position = Vector2(-200, -350)
+nodes/FireClip/node = SubResource("AnimationNodeBlend2_5m208")
+nodes/FireClip/position = Vector2(0, -400)
+nodes/ReloadPistol/node = SubResource("AnimationNodeAnimation_awcmi")
+nodes/ReloadPistol/position = Vector2(0, -550)
+nodes/ReloadRifle/node = SubResource("AnimationNodeAnimation_xp4g0")
+nodes/ReloadRifle/position = Vector2(0, -450)
+nodes/ReloadClip/node = SubResource("AnimationNodeBlend2_ecy84")
+nodes/ReloadClip/position = Vector2(200, -500)
+nodes/FireShot/node = SubResource("AnimationNodeOneShot_xfovx")
+nodes/FireShot/position = Vector2(200, -100)
+nodes/ReloadShot/node = SubResource("AnimationNodeOneShot_pblfv")
+nodes/ReloadShot/position = Vector2(400, -100)
+node_connections = [&"output", 0, &"ReloadShot", &"PistolCarryUpper", 0, &"CarryArmPose", &"PistolCarryUpper", 1, &"CarryGrip", &"PistolCarry", 0, &"PistolCarryLegs", &"PistolCarry", 1, &"PistolCarryUpper", &"PistolMove", 0, &"PistolCarry", &"PistolMove", 1, &"PistolAim", &"RifleMove", 0, &"RifleCarry", &"RifleMove", 1, &"RifleAim", &"WeaponBlend", 0, &"PistolMove", &"WeaponBlend", 1, &"RifleMove", &"HolsterBlend", 0, &"WeaponBlend", &"HolsterBlend", 1, &"Unarmed", &"FireClip", 0, &"FirePistol", &"FireClip", 1, &"FireRifle", &"ReloadClip", 0, &"ReloadPistol", &"ReloadClip", 1, &"ReloadRifle", &"FireShot", 0, &"HolsterBlend", &"FireShot", 1, &"FireClip", &"ReloadShot", 0, &"FireShot", &"ReloadShot", 1, &"ReloadClip"]

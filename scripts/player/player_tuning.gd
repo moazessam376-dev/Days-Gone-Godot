@@ -30,3 +30,10 @@ extends Resource
 
 @export_group("Aim")
 @export var aim_raise_time := 0.25
+
+@export_group("Carry")
+## How firmly the gun arm holds its by-the-side hanging pose (U_Idle's arm)
+## during carry locomotion. 1.0 = arm pinned to the pose (stiff), 0.0 = the
+## walk's full swing. The source pose hangs straight by the side, so high-ish
+## values stay close to the body.
+@export_range(0.0, 1.0, 0.01) var pistol_carry_arm_lock := 0.65

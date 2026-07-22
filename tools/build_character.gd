@@ -27,14 +27,33 @@ const KEEP := "SM_Chr_Hunter_Male_01"
 
 # Every dir here feeds the character's AnimationPlayer. pistol + rifle_mco are
 # MotusMan-rig clips (MoCap Online); rifle / pistol_extra / unarmed are Mixamo
-# X Bot clips. All arrive speaking humanoid-profile bone names via their
-# BoneMaps (tools/rig/configure_imports.gd), so they coexist in one library.
+# X Bot clips; ual is Quaternius' CC0 library (one GLB, ~43 clips — `allow`
+# picks the ones we use, `prefix` marks provenance). All arrive speaking
+# humanoid-profile bone names via their BoneMaps
+# (tools/rig/configure_imports.gd), so they coexist in one library.
 const ANIM_DIRS := [
-	"res://assets/animations/pistol",
-	"res://assets/animations/rifle_mco",
-	"res://assets/animations/rifle",
-	"res://assets/animations/pistol_extra",
-	"res://assets/animations/unarmed",
+	{"dir": "res://assets/animations/pistol"},
+	{"dir": "res://assets/animations/rifle_mco"},
+	{"dir": "res://assets/animations/rifle"},
+	{"dir": "res://assets/animations/pistol_extra"},
+	{"dir": "res://assets/animations/unarmed"},
+	{
+		"dir": "res://assets/animations/ual",
+		"prefix": "UAL_",
+		"allow": [
+			"Idle",
+			"Walk",
+			"Jog_Fwd",
+			"Sprint",
+			"Roll",
+			"Pistol_Idle",
+			"Pistol_Shoot",
+			"Pistol_Reload",
+			"Pistol_Aim_Up",
+			"Pistol_Aim_Neutral",
+			"Pistol_Aim_Down",
+		],
+	},
 ]
 const DEFAULT_ANIM := "W1_Stand_Aim_Idle_IPC"
 const FINGER_TIP_SCRIPT := "res://scripts/rig/finger_tip_modifier.gd"
@@ -57,6 +76,126 @@ const OUT_TEST := "res://scenes/test_character.tscn"
 # Verified on screen: feet plant identically to the pistol set.
 const W2_POSITION_SCALE := 0.596
 const W2_HIPS_Y_OFFSET := -0.115
+
+# The Quaternius locomotion cycles read more theatrical than the Days Gone
+# reference gait the user pointed at. Three measured compressions, all
+# "scale deviation around the track's own mean" (character preserved, motion
+# tightened), tuned across user reviews:
+#   * hips bounce: vertical 0.35, lateral 0.7 ("going up and down" — fixed)
+#   * stride width: leg rotations 0.75 ("the step itself is too wide")
+#   * shoulder sway: spine-chain + clavicle rotations 0.5 ("shoulders heavily
+#     going left and right")
+#   * left-arm swing: 0.7, keeps the free hand from crossing the body.
+const UAL_BOB_CLIPS := ["UAL_Walk", "UAL_Jog_Fwd", "UAL_Sprint"]
+const UAL_BOB_Y_SCALE := 0.35
+const UAL_BOB_XZ_SCALE := 0.7
+const UAL_STRIDE_SCALE := 0.75
+const UAL_STRIDE_BONES := [
+	"LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg"
+]
+const UAL_SWAY_SCALE := 0.5
+const UAL_SWAY_BONES := ["Spine", "Chest", "UpperChest", "LeftShoulder", "RightShoulder"]
+const UAL_ARM_SCALE := 0.7
+const UAL_ARM_BONES := ["LeftUpperArm", "LeftLowerArm"]
+# "the head going right and left while jogging ... should be something like
+# [ADS]: doesn't move or some slight move" — near-freeze it.
+const UAL_HEAD_SCALE := 0.3
+const UAL_HEAD_BONES := ["Neck", "Head"]
+
+# Posture bias for the UAL clip family (negative = lean back / straighten
+# the mocap hunch). The Quaternius rig holds a forward hunch — head pitched
+# ~30 deg DOWN, measured — so the correction is BAKED into the UAL_* clips'
+# spine-chain keys at build time. It must NOT be a runtime skeleton-wide
+# modifier: that applied the same fix to every clip and pitched the
+# level-headed U_Idle carry ~11 deg skyward (user-flagged; attributed by
+# post-modifier probe A/B in the running game). PostureAdjust stays in the
+# scene ZEROED as a live-tuning override only.
+const POSTURE_SPINE_PITCH := -3.0
+const POSTURE_CHEST_PITCH := -4.0
+const POSTURE_UPPER_CHEST_PITCH := -4.0
+# Was 8.0 as an anti-clipping bias; obsolete once the carry-time IK release
+# fixed the real clipping cause, and it read as "hand way too far from the
+# body" (user). Neutral now; the slider stays for live tuning if needed.
+const POSTURE_RIGHT_ARM_OUT := 0.0
+
+
+# Reduce locomotion bob: scale each hips position component's deviation from
+# its own mean. Keeps the gait's character, shrinks the bounce.
+func _reduce_bob(anim: Animation) -> void:
+	for t in anim.get_track_count():
+		if anim.track_get_type(t) != Animation.TYPE_POSITION_3D:
+			continue
+		if not String(anim.track_get_path(t)).ends_with(":Hips"):
+			continue
+		var n := anim.track_get_key_count(t)
+		if n == 0:
+			continue
+		var mean := Vector3.ZERO
+		for k in n:
+			mean += anim.track_get_key_value(t, k) as Vector3
+		mean /= float(n)
+		for k in n:
+			var v: Vector3 = anim.track_get_key_value(t, k)
+			v.x = mean.x + (v.x - mean.x) * UAL_BOB_XZ_SCALE
+			v.z = mean.z + (v.z - mean.z) * UAL_BOB_XZ_SCALE
+			v.y = mean.y + (v.y - mean.y) * UAL_BOB_Y_SCALE
+			anim.track_set_key_value(t, k, v)
+	_compress_rotation(anim, UAL_STRIDE_BONES, UAL_STRIDE_SCALE)
+	_compress_rotation(anim, UAL_SWAY_BONES, UAL_SWAY_SCALE)
+	_compress_rotation(anim, UAL_ARM_BONES, UAL_ARM_SCALE)
+	_compress_rotation(anim, UAL_HEAD_BONES, UAL_HEAD_SCALE)
+
+
+# Bake the UAL posture correction into a clip: premultiply a constant pitch
+# onto every spine-chain rotation key. Same math as the PostureAdjust
+# modifier (Quaternion(RIGHT, rad) * pose), and left-multiplication commutes
+# with blending, so mixes against unbaked clips fade the correction smoothly.
+func _apply_posture_bias(anim: Animation) -> void:
+	var bias := {
+		"Spine": POSTURE_SPINE_PITCH,
+		"Chest": POSTURE_CHEST_PITCH,
+		"UpperChest": POSTURE_UPPER_CHEST_PITCH,
+	}
+	for t in anim.get_track_count():
+		if anim.track_get_type(t) != Animation.TYPE_ROTATION_3D:
+			continue
+		var bone := String(anim.track_get_path(t)).get_slice(":", 1)
+		if not bias.has(bone):
+			continue
+		var q := Quaternion(Vector3.RIGHT, deg_to_rad(bias[bone]))
+		for k in anim.track_get_key_count(t):
+			var rot: Quaternion = anim.track_get_key_value(t, k)
+			anim.track_set_key_value(t, k, q * rot)
+
+
+# Scale a rotation track's swing around its own mean orientation: for each
+# key, slerp from the track mean toward the key by `scale`. 1.0 = untouched,
+# 0.0 = frozen at the mean. The mean of nearby unit quaternions is the
+# normalised component average (valid because a gait cycle stays well within
+# one hemisphere).
+func _compress_rotation(anim: Animation, bones: Array, scale: float) -> void:
+	for t in anim.get_track_count():
+		if anim.track_get_type(t) != Animation.TYPE_ROTATION_3D:
+			continue
+		var bone := String(anim.track_get_path(t)).get_slice(":", 1)
+		if not bone in bones:
+			continue
+		var n := anim.track_get_key_count(t)
+		if n < 2:
+			continue
+		var first: Quaternion = anim.track_get_key_value(t, 0)
+		var acc := Vector4.ZERO
+		for k in n:
+			var q: Quaternion = anim.track_get_key_value(t, k)
+			if q.dot(first) < 0.0:
+				q = -q
+			acc += Vector4(q.x, q.y, q.z, q.w)
+		var mean := Quaternion(acc.x, acc.y, acc.z, acc.w).normalized()
+		for k in n:
+			var q2: Quaternion = anim.track_get_key_value(t, k)
+			if q2.dot(mean) < 0.0:
+				q2 = -q2
+			anim.track_set_key_value(t, k, mean.slerp(q2, scale))
 
 
 func _init() -> void:
@@ -168,7 +307,10 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 	var lib := AnimationLibrary.new()
 
 	var count := 0
-	for anim_dir: String in ANIM_DIRS:
+	for entry: Dictionary in ANIM_DIRS:
+		var anim_dir: String = entry["dir"]
+		var allow: Array = entry.get("allow", [])
+		var prefix: String = entry.get("prefix", "")
 		var d := DirAccess.open(anim_dir)
 		if d == null:
 			push_error("missing animation dir " + anim_dir)
@@ -176,7 +318,7 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 		var files := d.get_files()
 		files.sort()
 		for f in files:
-			if f.get_extension().to_lower() != "fbx":
+			if not f.get_extension().to_lower() in ["fbx", "glb"]:
 				continue
 			var ps: PackedScene = load(anim_dir.path_join(f))
 			if ps == null:
@@ -189,8 +331,11 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 			for clip_name in src.get_animation_list():
 				# "Take 001" is the junk bind-pose take skinned FBX exports
 				# carry (same disease as Characters.fbx's own AnimationPlayer).
-				if clip_name != "RESET" and clip_name != "Take 001":
-					clip_names.append(clip_name)
+				if clip_name == "RESET" or clip_name == "Take 001":
+					continue
+				if not allow.is_empty() and not clip_name in allow:
+					continue
+				clip_names.append(clip_name)
 			for clip_name in clip_names:
 				var anim: Animation = src.get_animation(clip_name).duplicate(true)
 				# Mixamo FBXs name their single take "mixamo.com"; key single-clip
@@ -198,11 +343,16 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 				var key := clip_name
 				if clip_names.size() == 1:
 					key = f.get_basename()
+				key = prefix + key
 				if _should_loop(key):
 					anim.loop_mode = Animation.LOOP_LINEAR
 				if key.begins_with("W2_"):
 					_fix_w2_positions(anim)
 				_collapse_root_into_hips(anim)
+				if key in UAL_BOB_CLIPS:
+					_reduce_bob(anim)
+				if key.begins_with("UAL_"):
+					_apply_posture_bias(anim)
 				if lib.has_animation(key):
 					push_error("duplicate clip name " + key + " from " + f)
 					continue
@@ -284,7 +434,7 @@ func _collapse_root_into_hips(anim: Animation) -> void:
 func _should_loop(clip_key: String) -> bool:
 	if clip_key.ends_with("_Loop_IPC") or clip_key.ends_with("_Idle_IPC"):
 		return true
-	for token: String in ["_Idle", "_Walk", "_Strafe", "_Jog", "_Loop"]:
+	for token: String in ["_Idle", "_Walk", "_Strafe", "_Jog", "_Loop", "_Sprint"]:
 		if clip_key.contains(token):
 			return true
 	return false
@@ -331,6 +481,53 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	support.name = "SupportGrip"
 	socket.add_child(support)
 	support.position = Vector3(0.120312, 0.003870, 0.025649)
+
+	# Posture override, live tuning ONLY — all pitches ship zeroed. The real
+	# posture correction is baked per clip family (_apply_posture_bias on the
+	# UAL_* clips); running it here skeleton-wide pitched the level U_Idle
+	# carry skyward. The sliders remain so a tuning session can bias the spine
+	# chain in the Remote tree without a rebuild.
+	var posture := SkeletonModifier3D.new()
+	posture.name = "PostureAdjust"
+	posture.set_script(load("res://scripts/rig/posture_adjust.gd"))
+	skel.add_child(posture)
+	posture.set("spine_pitch_deg", 0.0)
+	posture.set("chest_pitch_deg", 0.0)
+	posture.set("upper_chest_pitch_deg", 0.0)
+	posture.set("right_arm_out_deg", POSTURE_RIGHT_ARM_OUT)
+
+	# Torso/head aim (Phase 2 M2). MUST run BEFORE LeftArmIK in child order so
+	# the IK solves against the already-rotated torso (docs/rig-tuning.md).
+	# forward_axis +Z is MEASURED: after Overwrite Axis every bone's global
+	# rest basis is world-aligned and the character faces +Z. AimTarget is a
+	# plain Node3D sibling of the skeleton; player.gd points it at the camera
+	# ray while aiming and eases the modifiers' influence up/down.
+	var aim_target := Node3D.new()
+	aim_target.name = "AimTarget"
+	skel.get_parent().add_child(aim_target)
+	aim_target.position = Vector3(0, 1.4, 10.0)
+
+	var torso_look := LookAtModifier3D.new()
+	torso_look.name = "TorsoLookAt"
+	skel.add_child(torso_look)
+	torso_look.bone_name = "UpperChest"
+	torso_look.target_node = NodePath("../../AimTarget")
+	torso_look.forward_axis = SkeletonModifier3D.BONE_AXIS_PLUS_Z
+	torso_look.primary_rotation_axis = Vector3.AXIS_Y
+	torso_look.use_secondary_rotation = true
+	torso_look.duration = 0.15
+	torso_look.influence = 0.6
+
+	var head_look := LookAtModifier3D.new()
+	head_look.name = "HeadLookAt"
+	skel.add_child(head_look)
+	head_look.bone_name = "Head"
+	head_look.target_node = NodePath("../../AimTarget")
+	head_look.forward_axis = SkeletonModifier3D.BONE_AXIS_PLUS_Z
+	head_look.primary_rotation_axis = Vector3.AXIS_Y
+	head_look.use_secondary_rotation = true
+	head_look.duration = 0.15
+	head_look.influence = 0.35
 
 	var ik := TwoBoneIK3D.new()
 	ik.name = "LeftArmIK"

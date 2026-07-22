@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/player/camera_rig.gd" id="2_camrig"]
 [ext_resource type="PackedScene" path="res://scenes/characters/hunter.tscn" id="3_hunter"]
 [ext_resource type="Resource" path="res://resources/tuning/player_tuning.tres" id="4_tuning"]
+[ext_resource type="AnimationNodeBlendTree" path="res://resources/animation/player_anim_tree.tres" id="5_animtree"]
 
 [sub_resource type="CapsuleShape3D" id="capsule"]
 radius = 0.3
@@ -20,6 +21,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("capsule")
 
 [node name="Hunter" parent="." instance=ExtResource("3_hunter")]
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+root_node = NodePath("../Hunter")
+tree_root = ExtResource("5_animtree")
+anim_player = NodePath("../Hunter/AnimationPlayer")
+callback_mode_process = 0
 
 [node name="CameraRig" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
