@@ -19,6 +19,13 @@ const AIM_RAY_LENGTH := 30.0
 ## LookAt influence targets (torso, head): full while aiming, a subtle
 ## residual while carrying so the character keeps some life.
 const LOOKAT_ADS := Vector2(0.6, 0.35)
+## Rifle ADS locks the torso harder. Its composite aim upper body is a
+## static pose, and the strafe legs' hips carry a ~40 deg gait twist whose
+## spine counter-rotation the composite discards — the LookAt has to
+## recover it (measured: gun yawed 12-17 deg right at 0.6 influence, ~4 at
+## 0.9). The pistol keeps the approved 0.6 — its aim clips track on their
+## own.
+const LOOKAT_ADS_RIFLE := Vector2(0.9, 0.35)
 const LOOKAT_CARRY := Vector2(0.15, 0.1)
 
 @export var tuning: PlayerTuning
@@ -140,7 +147,12 @@ func _update_aim(ads: bool, delta: float) -> void:
 	var target := origin - _camera.global_transform.basis.z * AIM_RAY_LENGTH
 	_aim_target.global_position = target
 
-	var goal := LOOKAT_ADS if ads else LOOKAT_CARRY
+	var weapon := _weapons.equipped_weapon()
+	var rifle_in_hand := _weapons.gun_in_hand() and weapon.anim_set == 1
+
+	var goal := LOOKAT_CARRY
+	if ads:
+		goal = LOOKAT_ADS_RIFLE if rifle_in_hand else LOOKAT_ADS
 	var w := 1.0 - exp(-3.0 * delta / maxf(tuning.aim_raise_time, 0.01))
 	_torso_look.influence = lerpf(_torso_look.influence, goal.x, w)
 	_head_look.influence = lerpf(_head_look.influence, goal.y, w)
@@ -150,8 +162,6 @@ func _update_aim(ads: bool, delta: float) -> void:
 	# the left palm to the handguard across every gait. The PISTOL keeps the
 	# IK aim-only: its carry is one-handed, and carry-time IK chased the grip
 	# across the body ("left hand going through the body" — user).
-	var weapon := _weapons.equipped_weapon()
-	var rifle_in_hand := _weapons.gun_in_hand() and weapon.anim_set == 1
 	var ik_goal := 1.0 if ads or rifle_in_hand else 0.0
 	_left_ik.influence = lerpf(_left_ik.influence, ik_goal, w)
 	_hand_tuner.influence = _left_ik.influence

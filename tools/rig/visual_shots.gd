@@ -33,6 +33,14 @@ func _phys(n: int) -> void:
 		await get_tree().physics_frame
 
 
+func _probe_gun(gun: Node3D, tag: String) -> void:
+	var f: Vector3 = gun.global_transform.basis.z
+	var pitch := rad_to_deg(atan2(f.y, Vector2(f.x, f.z).length()))
+	var yaw_err := rad_to_deg(wrapf(atan2(f.x, f.z) - _hunter.global_rotation.y, -PI, PI))
+	var roll := rad_to_deg(asin(clampf(gun.global_transform.basis.x.y, -1.0, 1.0)))
+	print("%s pitch=%+.1f yaw=%+.1f roll=%+.1f" % [tag, pitch, yaw_err, roll])
+
+
 func _press(action: String) -> void:
 	var ev := InputEventAction.new()
 	ev.action = action
@@ -103,9 +111,15 @@ func _run() -> void:
 	await _shot("r5_ads_strafeR_sideR", 0.0, -2.6, 1.4)
 	for i in 6:
 		await _phys(6)
-		var sf: Vector3 = ar_hand.global_transform.basis.z
-		print("STRAFE_GUN_PITCH_DEG=%.1f" % rad_to_deg(atan2(sf.y, Vector2(sf.x, sf.z).length())))
+		_probe_gun(ar_hand, "STRAFE_R")
 	Input.action_release("move_right")
+	Input.action_press("move_left")
+	await _phys(35)
+	await _shot("r6_ads_strafeL_front", 2.4, 0.0, 1.4)
+	for i in 6:
+		await _phys(6)
+		_probe_gun(ar_hand, "STRAFE_L")
+	Input.action_release("move_left")
 	await _phys(20)
 	Input.action_release("aim")
 	await _phys(20)

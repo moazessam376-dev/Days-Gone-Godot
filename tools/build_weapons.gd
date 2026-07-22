@@ -102,14 +102,16 @@ func _assault_rifle() -> WeaponResource:
 	w.anim_set = 1
 	w.mesh_scene = load("res://assets/weapons/SM_Wep_AssaultRifle_01.fbx")
 
-	# The revolver's measured basis rotated 19.8 deg about the gun's lateral
-	# axis. Reusing the revolver basis raw read MEASURABLY wrong: a rifle-grip
-	# wrist holds the gun pitched +19.8 deg (muzzle skyward in ADS, probed in
-	# the running game 2026-07-23). Post-multiplying Rx(+19.8) levels ADS at
-	# ~0 deg and puts carry at ~-44 (a fine low-carry rake).
+	# The revolver's measured basis rotated 27.45 deg about the gun's lateral
+	# axis, in two probed rounds: +19.8 (a rifle-grip wrist holds the gun
+	# muzzle-skyward vs the pistol-calibrated basis) then +7.65 more when the
+	# rifle's ADS torso lock rose to 0.9 (the socket is calibrated THROUGH
+	# the LookAt chain, so an influence change re-pitches the gun — see
+	# LOOKAT_ADS_RIFLE in player.gd). ADS probes level; carry rakes ~-49, a
+	# steep-but-fine low carry.
 	w.socket_basis_x = Vector3(0.113889, 0.012759, 0.993412)
-	w.socket_basis_y = Vector3(0.839203, 0.533961, -0.103068)
-	w.socket_basis_z = Vector3(-0.531758, 0.845413, 0.050105)
+	w.socket_basis_y = Vector3(0.760946, 0.641751, -0.095481)
+	w.socket_basis_z = Vector3(-0.638741, 0.766807, 0.063380)
 	w.socket_origin = Vector3.ZERO
 	# Negated grip centroid (112 verts, y < -0.02, -0.12 < z < 0.02, measured
 	# 2026-07-23: (-0.0012, -0.0611, -0.0183)) PLUS the revolver's hand-finish
@@ -133,7 +135,10 @@ func _assault_rifle() -> WeaponResource:
 	# fingers read flat/open (screenshot round 3). Coarse wrap seeds so the
 	# hand closes around the handguard; the user's calibration session
 	# fine-finishes these.
-	w.wrist_offset_deg = Vector3.ZERO
+	# Wrist: palm was clipping INTO the mag instead of wrapping it (user).
+	# Chosen from a 6-way axis trial in the running game: +Y rotates the
+	# palm around the mag, +X seats it under the guard.
+	w.wrist_offset_deg = Vector3(10, 35, 0)
 	w.thumb_curl = 25.0
 	w.index_curl = 30.0
 	w.middle_curl = 35.0
