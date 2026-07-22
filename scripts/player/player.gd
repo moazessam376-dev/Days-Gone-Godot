@@ -36,6 +36,8 @@ var _stance := 0.0
 @onready var _head_look: SkeletonModifier3D = $Hunter/GeneralSkeleton/HeadLookAt
 @onready var _left_ik: SkeletonModifier3D = $Hunter/GeneralSkeleton/LeftArmIK
 @onready var _hand_tuner: SkeletonModifier3D = $Hunter/GeneralSkeleton/SupportHandTuner
+@onready var _weapon_socket: Node3D = $Hunter/GeneralSkeleton/RightHandAttach/WeaponSocket
+@onready var _support_grip: Node3D = _weapon_socket.get_node("SupportGrip")
 
 
 func _ready() -> void:
@@ -115,7 +117,10 @@ func _update_anim_tree(ads: bool, delta: float) -> void:
 	var carry_pos := clampf(planar.length() / tuning.jog_speed, 0.0, 1.0)
 
 	_tree.set("parameters/PistolAim/blend_position", aim_pos)
-	_tree.set("parameters/RifleAim/blend_position", aim_pos)
+	_tree.set("parameters/RifleAimLegs/blend_position", aim_pos)
+	# Rifle aim upper body locked to the calibrated aim pose; legs walk the
+	# direction underneath (see build_anim_tree.gd).
+	_tree.set("parameters/RifleAim/blend_amount", 1.0)
 	_tree.set("parameters/PistolCarryLegs/blend_position", carry_pos)
 	# Composite carry: body from the walk space, gun arm held hanging by the
 	# side (see build_anim_tree.gd); lock strength is live-tunable. The inner
@@ -145,7 +150,13 @@ func _update_aim(ads: bool, delta: float) -> void:
 	# the left palm to the handguard across every gait. The PISTOL keeps the
 	# IK aim-only: its carry is one-handed, and carry-time IK chased the grip
 	# across the body ("left hand going through the body" — user).
-	var rifle_in_hand := _weapons.gun_in_hand() and _weapons.equipped_weapon().anim_set == 1
+	var weapon := _weapons.equipped_weapon()
+	var rifle_in_hand := _weapons.gun_in_hand() and weapon.anim_set == 1
 	var ik_goal := 1.0 if ads or rifle_in_hand else 0.0
 	_left_ik.influence = lerpf(_left_ik.influence, ik_goal, w)
 	_hand_tuner.influence = _left_ik.influence
+
+	# The support hand slides between its two calibrated points on the gun
+	# with the stance: cradle near the receiver in carry (the handguard
+	# point over-reached the arm), out on the handguard in ADS.
+	_support_grip.position = weapon.carry_support_grip_pos.lerp(weapon.support_grip_pos, _stance)

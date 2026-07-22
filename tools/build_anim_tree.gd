@@ -72,6 +72,16 @@ const PISTOL_AIM := [
 	["W1_Aim_Strafe_A", -1.0, 0.0],
 	["W1_Aim_Strafe_B", 1.0, 0.0],
 ]
+# Rifle aim locomotion is a LEGS-ONLY space under a constant aim upper body
+# (the ROADMAP's upper/lower split). Forced by measurement (2026-07-23):
+# R_Aim_Walk_B, despite the name, backpedals in a LOW CARRY (left wrist
+# +0.12 m, arm 20 deg — user: "the rifle is not on ADS" walking backwards),
+# and the Mixamo strafes aim with a different wrist convention than the
+# MotusMan pose the socket is calibrated against (gun reads off-axis —
+# user: "not aiming straightforward"). Their LEGS are all fine. So the legs
+# blend by direction while the whole upper body holds W2_Stand_Aim_Idle_v2
+# — the exact clip the socket is calibrated on — and LookAt + the support
+# IK add camera tracking and the left hand on top.
 const RIFLE_AIM := [
 	["W2_Stand_Aim_Idle_v2", 0.0, 0.0],
 	["W2_Walk_Aim_F_Loop_IPC", 0.0, 1.0],
@@ -79,6 +89,7 @@ const RIFLE_AIM := [
 	["R_Aim_Strafe_L", -1.0, 0.0],
 	["R_Aim_Strafe_R", 1.0, 0.0],
 ]
+const RIFLE_AIM_POSE := "W2_Stand_Aim_Idle_v2"
 
 const FIRE_CLIPS := ["W1_Stand_Fire_Single", "R_Fire"]
 const RELOAD_CLIPS := ["W1_Reload", "R_Reload"]
@@ -146,7 +157,18 @@ func _init() -> void:
 	tree.connect_node("RifleCarry", 1, "RifleCarryHold")
 	tree.add_node("Unarmed", _space_1d(UNARMED), Vector2(-600, 200))
 	tree.add_node("PistolAim", _space_2d(PISTOL_AIM), Vector2(-600, -300))
-	tree.add_node("RifleAim", _space_2d(RIFLE_AIM), Vector2(-600, -100))
+	# RifleAim = Blend2 with the UPPER-BODY filter (Spine subtree): legs from
+	# the direction space, everything above the hips from the calibrated aim
+	# pose. blend_amount pinned to 1.0 by player.gd.
+	tree.add_node("RifleAimLegs", _space_2d(RIFLE_AIM), Vector2(-800, -120))
+	tree.add_node("RifleAimPose", _anim(RIFLE_AIM_POSE), Vector2(-800, -40))
+	var rifle_aim_mix := AnimationNodeBlend2.new()
+	rifle_aim_mix.filter_enabled = true
+	for p in filter_paths:
+		rifle_aim_mix.set_filter_path(p, true)
+	tree.add_node("RifleAim", rifle_aim_mix, Vector2(-600, -100))
+	tree.connect_node("RifleAim", 0, "RifleAimLegs")
+	tree.connect_node("RifleAim", 1, "RifleAimPose")
 
 	tree.add_node("PistolMove", AnimationNodeBlend2.new(), Vector2(-400, -250))
 	tree.add_node("RifleMove", AnimationNodeBlend2.new(), Vector2(-400, -50))

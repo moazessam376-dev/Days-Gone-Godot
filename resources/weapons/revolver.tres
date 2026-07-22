@@ -12,6 +12,7 @@ socket_basis_y = Vector3(0.969717, 0.21602, -0.113947)
 socket_basis_z = Vector3(-0.216051, 0.976306, 0.01223)
 mesh_offset = Vector3(0.012529, 0.095424, 0.096369)
 support_grip_pos = Vector3(0.120312, 0.00387, 0.025649)
+carry_support_grip_pos = Vector3(0.120312, 0.00387, 0.025649)
 elbow_pole_pos = Vector3(0.915536, 1, 0.15)
 wrist_offset_deg = Vector3(2.82, -3.78, 0.09)
 thumb_curl = 57.5

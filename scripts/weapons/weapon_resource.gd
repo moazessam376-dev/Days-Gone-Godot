@@ -33,9 +33,16 @@ extends Resource
 ## The mesh's position under WeaponSocket — the origin-to-grip correction
 ## (weapon FBX origins sit mid-body, not at the grip).
 @export var mesh_offset := Vector3.ZERO
-## Where the support (left) palm belongs, parented to the gun via SupportGrip
-## so it stays valid in every clip. TwoBoneIK3D closes the reach gap.
+## Where the support (left) palm belongs while AIMING, parented to the gun
+## via SupportGrip so it stays valid in every clip. TwoBoneIK3D closes the
+## reach gap.
 @export var support_grip_pos := Vector3.ZERO
+## Same, while CARRYING — a real support hand slides between two spots on
+## the gun per stance (cradle near the receiver vs out on the foregrip).
+## player.gd lerps SupportGrip between the two with the stance blend. For a
+## carry that far-reaches ("left arm hyper extended" — user), pull this in
+## toward the right hand.
+@export var carry_support_grip_pos := Vector3.ZERO
 ## LeftElbowPole position — which way the left elbow points.
 @export var elbow_pole_pos := Vector3.ZERO
 

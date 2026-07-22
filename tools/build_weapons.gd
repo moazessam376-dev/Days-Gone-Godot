@@ -52,7 +52,10 @@ func _revolver() -> WeaponResource:
 	# until the grip sat right in the fist (the FBX origin is mid-body).
 	w.mesh_offset = Vector3(0.012529, 0.095424, 0.096369)
 	# Where the left palm meets the gun; placed by the user on the gizmo.
+	# Carry point identical: the pistol's support IK is aim-only, so the
+	# carry position never drives the arm.
 	w.support_grip_pos = Vector3(0.120312, 0.003870, 0.025649)
+	w.carry_support_grip_pos = Vector3(0.120312, 0.003870, 0.025649)
 	# Pushes the left elbow out so the arm reads naturally.
 	w.elbow_pole_pos = Vector3(0.915536, 1.0, 0.15)
 
@@ -113,12 +116,17 @@ func _assault_rifle() -> WeaponResource:
 	# delta (+0.013, +0.0215, +0.078) — the fist-vs-centroid correction the
 	# user's revolver placement encodes, weapon-agnostic to first order.
 	w.mesh_offset = Vector3(0.014, 0.083, 0.096)
-	# Under the handguard (underside measured y=0.019, centre z=0.28), wrist
-	# offset left and below the surface; mesh point + mesh_offset. Iterated
-	# against screenshots: raised from the first seed (palm floated), then
-	# pulled BACK to the guard's rear third — a far-forward target
-	# straightened the elbow (user: "the left arm is getting a bit extended").
-	w.support_grip_pos = Vector3(0.06, 0.055, 0.33)
+	# AIM grip: under the handguard (underside measured y=0.019 mesh, i.e.
+	# 0.102 socket; centre z=0.28), wrist left of and below the surface.
+	# Iterated against screenshots: pulled back to the guard's rear third (a
+	# far-forward target straightened the elbow — user), then raised toward
+	# the underside ("the left palm is on the air").
+	w.support_grip_pos = Vector3(0.06, 0.075, 0.33)
+	# CARRY grip: just ahead of the mag well, close to the right hand — the
+	# handguard point over-reached the arm in the low carry ("left arm is
+	# still over/hyper extended ... normalize the space between two hands on
+	# relaxed" — user). player.gd lerps between the two with stance.
+	w.carry_support_grip_pos = Vector3(0.06, 0.06, 0.22)
 	w.elbow_pole_pos = Vector3(0.915536, 1.0, 0.15)
 
 	# The mocap left hand held MotusMan's foregrip — on the Synty AK the

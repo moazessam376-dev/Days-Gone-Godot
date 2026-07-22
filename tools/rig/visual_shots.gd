@@ -92,6 +92,21 @@ func _run() -> void:
 	await _shot("r3_ads_frontL", 2.0, 1.5, 1.5)
 	await _shot("r3_ads_sideR", 0.0, -2.6, 1.4)
 	await _shot("r3_ads_hand_close", 1.4, 1.0, 1.5)
+	Input.action_press("move_back")
+	await _phys(40)
+	await _shot("r4_ads_back_sideR", 0.0, -2.6, 1.4)
+	await _shot("r4_ads_back_frontL", 2.0, 1.5, 1.5)
+	Input.action_release("move_back")
+	Input.action_press("move_right")
+	await _phys(35)
+	await _shot("r5_ads_strafeR_front", 2.4, 0.0, 1.4)
+	await _shot("r5_ads_strafeR_sideR", 0.0, -2.6, 1.4)
+	for i in 6:
+		await _phys(6)
+		var sf: Vector3 = ar_hand.global_transform.basis.z
+		print("STRAFE_GUN_PITCH_DEG=%.1f" % rad_to_deg(atan2(sf.y, Vector2(sf.x, sf.z).length())))
+	Input.action_release("move_right")
+	await _phys(20)
 	Input.action_release("aim")
 	await _phys(20)
 

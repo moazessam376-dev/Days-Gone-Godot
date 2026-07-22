@@ -85,9 +85,13 @@ func _run() -> void:
 		"post-swap: one-shot pickers on rifle",
 		absf(float(tree.get("parameters/FireClip/blend_amount")) - 1.0) < 0.001
 	)
+	# Post-swap the stance is carry, so player.gd holds the grip at the
+	# CARRY point (it lerps to support_grip_pos with the stance blend).
 	_check(
-		"support grip = rifle tres",
-		(socket.get_node("SupportGrip") as Node3D).position.is_equal_approx(ar.support_grip_pos)
+		"support grip = rifle tres (carry point)",
+		(socket.get_node("SupportGrip") as Node3D).position.is_equal_approx(
+			ar.carry_support_grip_pos
+		)
 	)
 	_check(
 		"tuner curls = rifle tres",

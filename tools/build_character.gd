@@ -123,6 +123,22 @@ const W2_POSTURE := {
 	"W2_Stand_Relaxed_Idle_v2": -14.0,
 }
 
+# The Mixamo aim strafes hold their HIPS pitched back vs the aim idle, and
+# hips are deliberately unfiltered in the RifleAim composite (legs live
+# there) — so the whole aim upper body rode the lean and the gun measured a
+# CONSTANT +8.4 deg muzzle-up across the strafe gait (probed in the running
+# game, 2026-07-23; user: "not aiming straightforward" on A/D). Bias the
+# hips pitch forward and counter-rotate both upper legs by the exact
+# conjugate so the legs' world pose — and the foot plants — are unchanged.
+# Calibrated by probe: the underlying hips delta vs the aim idle is ~21
+# deg, but TorsoLookAt re-tracks ~60% of it, so the gun responds at ~0.35x
+# the bias (8.4 -> gun 5.5; 14 -> gun ~2.8). Full correction would tip the
+# pelvis visibly — 14 leaves a ~3 deg residual the LookAt hides in motion.
+const STRAFE_HIPS_PITCH := {
+	"R_Aim_Strafe_L": 14.0,
+	"R_Aim_Strafe_R": 14.0,
+}
+
 # The Quaternius locomotion cycles read more theatrical than the Days Gone
 # reference gait the user pointed at. Three measured compressions, all
 # "scale deviation around the track's own mean" (character preserved, motion
@@ -210,6 +226,37 @@ func _apply_posture_bias(anim: Animation) -> void:
 		for k in anim.track_get_key_count(t):
 			var rot: Quaternion = anim.track_get_key_value(t, k)
 			anim.track_set_key_value(t, k, q * rot)
+
+
+# Rotate a clip's hips pitch while preserving the legs' WORLD pose: the
+# upper legs are children of the hips, so each leg key gets the exact
+# conjugate correction (leg' = h^-1 q^-1 h leg, with h the hips rotation at
+# that key's time). Legs are corrected FIRST, while the hips track still
+# holds its original values to interpolate against.
+func _apply_hips_pitch_bias(anim: Animation, deg: float) -> void:
+	var q := Quaternion(Vector3.RIGHT, deg_to_rad(deg))
+	var hips_rot := -1
+	for t in anim.get_track_count():
+		if (
+			anim.track_get_type(t) == Animation.TYPE_ROTATION_3D
+			and String(anim.track_get_path(t)).ends_with(":Hips")
+		):
+			hips_rot = t
+	if hips_rot == -1:
+		return
+	for t in anim.get_track_count():
+		if anim.track_get_type(t) != Animation.TYPE_ROTATION_3D:
+			continue
+		var bone := String(anim.track_get_path(t)).get_slice(":", 1)
+		if bone != "LeftUpperLeg" and bone != "RightUpperLeg":
+			continue
+		for k in anim.track_get_key_count(t):
+			var h := anim.rotation_track_interpolate(hips_rot, anim.track_get_key_time(t, k))
+			var leg: Quaternion = anim.track_get_key_value(t, k)
+			anim.track_set_key_value(t, k, h.inverse() * q.inverse() * h * leg)
+	for k in anim.track_get_key_count(hips_rot):
+		var rot: Quaternion = anim.track_get_key_value(hips_rot, k)
+		anim.track_set_key_value(hips_rot, k, q * rot)
 
 
 # Bake a total spine-chain pitch onto one clip, split evenly across the
@@ -417,6 +464,8 @@ func _attach_animations(root: Node, skel: Skeleton3D) -> int:
 					_apply_posture_bias(anim)
 				if W2_POSTURE.has(key):
 					_apply_pitch_bias(anim, W2_POSTURE[key])
+				if STRAFE_HIPS_PITCH.has(key):
+					_apply_hips_pitch_bias(anim, STRAFE_HIPS_PITCH[key])
 				if lib.has_animation(key):
 					push_error("duplicate clip name " + key + " from " + f)
 					continue

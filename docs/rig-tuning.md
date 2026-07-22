@@ -146,7 +146,8 @@ gates the feel; every value below has a live gizmo/slider for finishing.
 |---|---|---|
 | socket basis | revolver basis × Rx(+19.8°) | the revolver basis raw held the rifle muzzle +19.8° skyward in ADS (probed in the running game); the rotation levels ADS at 0.0° measured, carry rakes −42° (fine for a low carry) |
 | `mesh_offset` | `(0.014, 0.083, 0.096)` | negated grip centroid (112 verts) + the revolver's hand-finish delta |
-| `support_grip_pos` | `(0.06, 0.055, 0.33)` | rear third of the handguard; a far-forward target straightened the elbow (user: "left arm is getting a bit extended") |
+| `support_grip_pos` (ADS) | `(0.06, 0.075, 0.33)` | rear third of the handguard, raised onto the underside ("the left palm is on the air"); a far-forward target straightened the elbow ("left arm is getting a bit extended") |
+| `carry_support_grip_pos` | `(0.06, 0.06, 0.22)` | just ahead of the mag well — the handguard point over-reached the arm in the low carry ("normalize the space between two hands on relaxed"). player.gd lerps SupportGrip between the two points with the stance blend |
 | curls | thumb 25 / index 30 / middle 35 | mocap held MotusMan's foregrip — fingers read flat on the Synty AK; coarse wrap, user fine-finishes |
 | stow (BackStow) | pos `(-0.18, -0.30, -0.16)`, rot `(-50, 90, -90)` | grip lower back right, barrel up-left diagonal, hugging the back |
 
@@ -166,6 +167,18 @@ Both were diagnosed by the clip sweep (`godot-animation-pipeline` skill):
   default 1.0). The support-hand IK now stays ON during rifle carry (it is
   two-handed), welding the left palm to the handguard at every gait — the
   pistol keeps IK aim-only.
+- **`R_Aim_Walk_B` is not an aim** — it backpedals in a low carry (left
+  wrist +0.12 m, arm 20°; user: "the rifle is not on ADS" walking
+  backwards), and the Mixamo aim strafes aim with a different wrist
+  convention than the MotusMan pose the socket is calibrated against (gun
+  off-axis; "not aiming straightforward"). Fix: `RifleAim` is a Blend2 with
+  the UPPER-BODY filter — legs blend by direction in `RifleAimLegs`, the
+  whole upper body holds `W2_Stand_Aim_Idle_v2` (the clip the socket is
+  calibrated on), LookAt + IK on top. The strafes' remaining defect — hips
+  pitched back ~21° vs the aim idle, leaking a constant +8.4° muzzle-up
+  through the unfiltered hips — is baked down by `STRAFE_HIPS_PITCH` (+14°
+  hips bias, upper legs counter-rotated by the exact conjugate so foot
+  plants are untouched; residual ~3.5°, hidden by LookAt in motion).
 - **`W2_Stand_Relaxed_Idle_v2` leans +5.2° vs the approved U_Idle −4.4°**
   ("leaning forward weirdly with the rifle") → `W2_POSTURE` bakes −14°
   across the spine chain (lands −2.9°; the lean responds at ~0.59× the
