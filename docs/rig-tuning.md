@@ -7,8 +7,13 @@ several rounds on adjust → screenshot → adjust for weapon placement.
 
 Anything that needs "move it, look at it, move it again" is the user's job, in
 the editor, with a gizmo. Claude's job is to make sure a control *exists* for
-every part of the pose, to read the values back out, and to bake them into
-`tools/build_character.gd` so a rebuild cannot lose them.
+every part of the pose, to read the values back out, and to bake them into the
+right generator so a rebuild cannot lose them. Since M3 the bake target is
+split: **weapon values** (socket basis, mesh offset, grips, curls, stow
+placement, stats) go into `tools/build_weapons.gd` →
+`resources/weapons/*.tres`; everything else stays in
+`tools/build_character.gd`. Rebuild order: `build_weapons.gd` first, then
+`build_character.gd`.
 
 Claude should not tune poses by screenshot. That loop is exactly what cost the
 Three.js project 14 rounds, and it is slower and worse than the user doing it
@@ -27,6 +32,15 @@ and adjust while it runs; no restart, no rebuild.
 | **Left wrist** rotation | `GeneralSkeleton/SupportHandTuner` → `wrist_offset_deg` | Inspector |
 | **Left finger** curl | `SupportHandTuner` → `thumb_curl` / `index_curl` / `middle_curl` | Inspector sliders |
 | **Fingertip** curl, both hands | `GeneralSkeleton/FingerTips` → `follow` | Inspector |
+| Where the **rifle stows on the back** | `GeneralSkeleton/BackSocket/BackStow` | Drag / rotate gizmo |
+| Where the **revolver stows on the hip** | `GeneralSkeleton/HipSocket/HipStow` | Drag / rotate gizmo |
+
+The hand controls (socket, grips, curls) are **per weapon** — the values live
+on each weapon's resource and the WeaponManager re-applies them on every
+equip. When calibrating a weapon, make sure ITS values are on the shared
+nodes first (they are whatever the scene last shipped or the manager last
+applied). Eye-icon visibility toggles during a calibration session are safe:
+the WeaponManager re-asserts hand/stow visibility on every run.
 
 `SupportGrip` and the weapon socket are parented **to the gun**, so a value set
 once stays correct in every animation — walk, jog, crouch, fire. This is not
@@ -82,9 +96,10 @@ Phase 2 adds `LookAtModifier3D` (torso aim) and it must sit **before**
 
 ## Current authored values (pistol / revolver, aim idle)
 
-Placed by the user in the editor on 2026-07-21 and baked into
-`tools/build_character.gd`. Recorded here so the intent survives, not just the
-numbers.
+Placed by the user in the editor on 2026-07-21, originally baked into
+`tools/build_character.gd`, migrated unchanged to `tools/build_weapons.gd` →
+`resources/weapons/revolver.tres` in M3. Recorded here so the intent
+survives, not just the numbers.
 
 | Control | Value | What it was correcting |
 |---|---|---|
@@ -119,3 +134,22 @@ off = −0.9°; the LookAt residuals measured under 1°.
 `PostureAdjust` stays in the scene with **all pitches zeroed** as a
 live-tuning override only. If a future clip family hunches, bake its own
 correction at build time — do not turn the global sliders back on.
+
+## Assault rifle — measured seeds, awaiting the calibration session (2026-07-23)
+
+Everything on `resources/weapons/assault_rifle.tres` is a **seed**, not a
+calibration: enough to put the rifle recognisably in the hands and on the
+back so the gizmos start somewhere sane.
+
+| Value | Seed | How it was derived |
+|---|---|---|
+| socket basis | revolver's measured basis | Overwrite Axis normalised the hand bone, so one pistol-grip orientation transfers to first order |
+| `mesh_offset` | `(0.014, 0.083, 0.096)` | negated grip centroid (112 verts, y < −0.02, −0.12 < z < 0.02) + the revolver's hand-finish delta |
+| `support_grip_pos` | `(0.064, 0.043, 0.376)` | under the handguard (underside y 0.019, centre z 0.28), wrist left of and below the surface |
+| stow (BackStow) | pos `(-0.18, -0.30, -0.16)`, rot `(-50, 90, -90)` | grip at the lower back right, barrel up-left diagonal — measured barrel_dir (0.64, 0.77, 0) in the running scene |
+| curls / wrist | all zero | rifle clips are genuinely two-handed; pure mocap until the user sees it |
+
+The user's calibration session covers: rifle socket + grip + curls, and
+back/hip stow placement. Bake results into `tools/build_weapons.gd` (with
+reasons here), re-run it and `build_character.gd`, diff-check nothing
+reverts.
