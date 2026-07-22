@@ -168,5 +168,10 @@ func _update_aim(ads: bool, delta: float) -> void:
 
 	# The support hand slides between its two calibrated points on the gun
 	# with the stance: cradle near the receiver in carry (the handguard
-	# point over-reached the arm), out on the handguard in ADS.
-	_support_grip.position = weapon.carry_support_grip_pos.lerp(weapon.support_grip_pos, _stance)
+	# point over-reached the arm), out on the handguard in ADS. Skipped
+	# under calibration_freeze — this per-frame write would otherwise erase
+	# a live tuning session's dragging within one frame.
+	if not _weapons.calibration_freeze:
+		_support_grip.position = weapon.carry_support_grip_pos.lerp(
+			weapon.support_grip_pos, _stance
+		)

@@ -101,6 +101,21 @@ func _run() -> void:
 		)
 	)
 
+	# --- calibration freeze: live tuning edits must survive the per-frame
+	# grip write and an equip re-apply (the handed-over control must WORK)
+	mgr.set("calibration_freeze", true)
+	var grip := socket.get_node("SupportGrip") as Node3D
+	var probe_pos := Vector3(0.5, 0.6, 0.7)
+	grip.position = probe_pos
+	await _wait(5)
+	_check("freeze: live grip edit survives", grip.position.is_equal_approx(probe_pos))
+	mgr.set("calibration_freeze", false)
+	await _wait(5)
+	_check(
+		"unfreeze: grip re-asserted from tres",
+		grip.position.is_equal_approx(ar.carry_support_grip_pos)
+	)
+
 	# --- same-key holster: both weapons stowed, unarmed set
 	_press("weapon_2")
 	await _wait(35)  # past 0.4 s

@@ -50,6 +50,40 @@ The tuner ships all-zero, which is a deliberate no-op: with every slider at 0
 the pose is pure mocap. Only author a correction where the mocap is actually
 wrong on this rig.
 
+### The rifle calibration session — two tools, two venues
+
+**Palm / left hand (live, in the running game):**
+1. Press **F5**. Press **2** to bring the rifle out; hold **RMB** to pose
+   ADS, or release it for the carry cradle.
+2. In the editor's Scene dock, click the **Remote** tab (appears while the
+   game runs).
+3. Select `Player/WeaponManager` and tick **`calibration_freeze`** in the
+   Inspector — without this, every value below is rewritten each frame and
+   dragging appears to do nothing.
+4. Now adjust live, in the Inspector:
+   - `Player/Hunter/GeneralSkeleton/SupportHandTuner` →
+     `wrist_offset_deg`, `thumb_curl` / `index_curl` / `middle_curl`
+     (palm rotation + finger wrap; this is the tool the pistol was
+     finished with)
+   - `Player/Hunter/GeneralSkeleton/RightHandAttach/WeaponSocket/SupportGrip`
+     → `position` (where the palm sits on the gun; note whether you were
+     in ADS or carry — they are separate baked points)
+5. Screenshot or note the final numbers and hand them to Claude to bake
+   into `tools/build_weapons.gd`. Values changed in the Remote tree are
+   gone when the game closes — the bake is what makes them permanent.
+
+**Stow placement (gizmo, in the editor, game closed):**
+1. Open `scenes/characters/hunter.tscn`.
+2. In the Scene dock select `GeneralSkeleton/BackSocket/BackStow` (rifle)
+   or `GeneralSkeleton/HipSocket/HipStow` (revolver).
+3. Drag with the move gizmo (**W**) and rotate with **E** until it sits
+   right against the body. The stowed mesh is parented under the node, so
+   it follows the gizmo.
+4. **Ctrl/Cmd+S**, then tell Claude — the values get read out of the scene
+   and baked into `tools/build_weapons.gd` (a rebuild would otherwise
+   revert them, and the WeaponManager re-asserts the .tres values on every
+   run).
+
 ### Camera, while you work
 
 `scripts/dev/orbit_camera.gd` is on the test scene's camera:

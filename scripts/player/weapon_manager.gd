@@ -29,6 +29,13 @@ signal reload_finished
 @export var weapons: Array[WeaponResource] = []
 @export var tuning: PlayerTuning
 
+## CALIBRATION SWITCH — tick this in the Remote tree while the game runs to
+## freeze every runtime rig write (socket, support grips, tuner values), so
+## a tuning session can adjust those nodes live without player.gd or an
+## equip overwriting the changes. Weapon switching still works, it just
+## stops re-applying calibration. Ship value: off.
+@export var calibration_freeze := false
+
 var _equipped := 0
 var _holstered := false
 ## True while a weapon mesh is actually in the hand — flips exactly when the
@@ -159,15 +166,16 @@ func _request(slot: int, same_key_holsters := true) -> void:
 func _apply_weapon(slot: int) -> void:
 	_equipped = slot
 	var w := weapons[slot]
-	_socket.transform = w.socket_transform()
-	_support_grip.position = w.support_grip_pos
-	_elbow_pole.position = w.elbow_pole_pos
-	_tuner.set("wrist_offset_deg", w.wrist_offset_deg)
-	_tuner.set("thumb_curl", w.thumb_curl)
-	_tuner.set("index_curl", w.index_curl)
-	_tuner.set("middle_curl", w.middle_curl)
-	_tuner.set("curl_axis", w.curl_axis)
-	_tuner.set("thumb_axis", w.thumb_axis)
+	if not calibration_freeze:
+		_socket.transform = w.socket_transform()
+		_support_grip.position = w.support_grip_pos
+		_elbow_pole.position = w.elbow_pole_pos
+		_tuner.set("wrist_offset_deg", w.wrist_offset_deg)
+		_tuner.set("thumb_curl", w.thumb_curl)
+		_tuner.set("index_curl", w.index_curl)
+		_tuner.set("middle_curl", w.middle_curl)
+		_tuner.set("curl_axis", w.curl_axis)
+		_tuner.set("thumb_axis", w.thumb_axis)
 	_camera_rig.set("ads_fov", w.ads_fov)
 	_refresh_visibility()
 	weapon_changed.emit(w)
