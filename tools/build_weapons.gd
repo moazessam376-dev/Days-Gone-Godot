@@ -131,19 +131,16 @@ func _assault_rifle() -> WeaponResource:
 	w.carry_support_grip_pos = Vector3(0.06, 0.06, 0.22)
 	w.elbow_pole_pos = Vector3(0.915536, 1.0, 0.15)
 
-	# The mocap left hand held MotusMan's foregrip — on the Synty AK the
-	# fingers read flat/open (screenshot round 3). Coarse wrap seeds so the
-	# hand closes around the handguard; the user's calibration session
-	# fine-finishes these.
-	# Wrist: palm was clipping INTO the mag instead of wrapping it (user).
-	# Chosen from a 6-way axis trial in the running game: +Y rotates the
-	# palm around the mag, +X seats it under the guard.
-	w.wrist_offset_deg = Vector3(10, 35, 0)
-	w.thumb_curl = 25.0
+	# Authored by the user live in the running game (calibration_freeze
+	# session, 2026-07-23) — in-progress values banked from their Inspector
+	# screenshots so a crash or restart cannot lose them; the session is
+	# still refining.
+	w.wrist_offset_deg = Vector3(-7, 18, -3)
+	w.thumb_curl = 55.0
 	w.index_curl = 30.0
 	w.middle_curl = 35.0
-	w.curl_axis = Vector3(1, 0, 0)
-	w.thumb_axis = Vector3(0.728, 0.0, 0.685)
+	w.curl_axis = Vector3(1.0, 0.0, 1.5)
+	w.thumb_axis = Vector3(0.7, 0.0, 0.6)
 
 	# Days Gone diagonal back carry. SEED ONLY. UpperChest-bone space: grip
 	# lands at the lower back right (-X right, -Y down, -Z behind); the
