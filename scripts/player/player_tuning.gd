@@ -38,6 +38,9 @@ extends Resource
 ## Holster/draw: HolsterBlend toward the unarmed set, the gun moving to its
 ## body stow at the blend middle.
 @export var holster_time := 0.4
+## How fast a shot's camera kick eases back to the aim baseline. The kick
+## SIZE is per-weapon (recoil_pitch_deg on the WeaponResource).
+@export var recoil_recover_time := 0.15
 
 @export_group("Carry")
 ## How firmly the gun arm holds its by-the-side hanging pose (U_Idle's arm)

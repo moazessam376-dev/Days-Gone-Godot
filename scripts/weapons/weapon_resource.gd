@@ -64,6 +64,13 @@ extends Resource
 @export var stow_position := Vector3.ZERO
 @export var stow_rotation_deg := Vector3.ZERO
 
+@export_group("Animation")
+## One-shot clip names in the baked library, consumed by build_anim_tree.gd
+## (the FireClip/ReloadClip pickers are built from these, ordered by anim_set)
+## and by the WeaponManager (reload clip length -> ReloadScale sync).
+@export var fire_clip := &""
+@export var reload_clip := &""
+
 @export_group("Stats")
 @export var damage := 0.0
 ## Rounds per minute; the fire-rate gate for M4.
