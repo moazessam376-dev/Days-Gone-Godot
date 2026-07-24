@@ -220,3 +220,50 @@ Both were diagnosed by the clip sweep (`godot-animation-pipeline` skill):
   leveling the aim spine rotates the gun up with it — a −16.5° bias read as
   the rifle aiming 35° skyward, screenshot-verified, and the aim stance's
   own forward lean reads as intent, not defect.
+
+## Recoil must not double-count the player's compensation (2026-07-24)
+
+The M4 firing playtest showed the camera sinking into the dirt over a rifle
+burst and then, over-corrected, ending up in the sky. It was **not** the kick
+size — with hands off the mouse, 26 shots move the pitch **+0.07°**, i.e.
+nothing.
+
+The bug was in the recovery. `camera_rig.gd` banked every kick as
+`_recoil_debt` and drained it back to the baseline. But a player holding the
+reticle on target pulls the mouse **down by the kick they just took** — and
+the rig then handed that same correction back a second time. Measured against
+the real script:
+
+| player behaviour | pitch after 26 shots (before / after) |
+|---|---|
+| hands off the mouse | +0.07° / +0.07° |
+| pulls down 1× kick (holding the reticle on target) | **−9.03°** / −0.00° |
+| pulls down 2× kick | −9.10° / −9.10° (their own pull, nothing added) |
+
+Fix: mouse-look pitch goes through `_add_pitch()`, and a **downward** input
+pays off the outstanding debt instead of stacking with it. `add_recoil()` also
+banks only what the pitch clamp actually let through — firing at the ceiling
+used to bank debt that never moved the camera, then drag it down on drain.
+
+Regression: `tools/verify_fire_reload.gd` → "recoil: compensated burst leaves
+aim where the player put it". It reads **−14.00°** (10 × the revolver's 1.4°
+kick — the whole recoil total) if the payoff is removed.
+
+**The recoil kick size is still untuned.** +0.07° over a mag is invisible;
+`recoil_pitch_deg` per weapon is the knob, and it wants a playtest now that
+the model underneath it is honest.
+
+## The support-hand IK reaches — a wrong grip is placement, not plumbing
+
+Measured in the running main scene through a `BoneAttachment3D` on `LeftHand`
+(post-modifier; `get_bone_global_pose()` would read a working IK as a no-op):
+the palm lands **0.0 cm** from `SupportGrip` in both carry and ADS. So when the
+rifle grip looks wrong, the target is in the wrong place — a gizmo job, per
+"the user places, Claude plumbs" — and not a solver that is failing to reach.
+
+Useful frame for that session: in socket space **+z runs along the barrel**,
+the rifle spans **z −0.21 … +0.82 m** and **y −0.10 … +0.23 m**, the muzzle is
+at z 0.696, and the current ADS grip point is `(0.06, 0.075, 0.33)`.
+
+Regression: `tools/verify_weapon_switching.gd` → "support hand IK reaches the
+grip target".

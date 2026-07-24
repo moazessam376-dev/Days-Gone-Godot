@@ -6,6 +6,10 @@ extends Node3D
 # mouse look; aim state is pushed in by player.gd so there is one source of
 # truth for ADS.
 
+## Below this the recoil debt is settled outright instead of asymptoting
+## toward zero forever.
+const RECOIL_SETTLED := 0.0001
+
 @export var tuning: PlayerTuning
 
 ## Set by player.gd every physics frame.
@@ -22,6 +26,10 @@ var ads_fov := 42.0
 ## camera up instantly; this drains it back down over recoil_recover_time so
 ## there is no permanent aim drift (per-weapon recoil IDENTITY is Phase 9 —
 ## this is the M4 minimum that makes a shot feel like a shot).
+##
+## The debt is what the rig still owes — NOT the total kick delivered. Pulling
+## the mouse down pays it off (_add_pitch), because a player fighting the
+## muzzle has already taken that correction by hand.
 var _recoil_debt := 0.0
 
 @onready var _arm: SpringArm3D = $SpringArm3D
@@ -40,11 +48,7 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotation.y -= event.relative.x * tuning.mouse_sensitivity
-		_arm.rotation.x = clampf(
-			_arm.rotation.x - event.relative.y * tuning.mouse_sensitivity,
-			deg_to_rad(tuning.pitch_min_deg),
-			deg_to_rad(tuning.pitch_max_deg)
-		)
+		_add_pitch(-event.relative.y * tuning.mouse_sensitivity)
 	elif event.is_action_pressed("shoulder_swap"):
 		shoulder_side = -shoulder_side
 
@@ -65,15 +69,33 @@ func _physics_process(delta: float) -> void:
 	if _recoil_debt > 0.0:
 		var back := _recoil_debt * _smooth_weight(tuning.recoil_recover_time, delta)
 		_recoil_debt -= back
+		if _recoil_debt < RECOIL_SETTLED:
+			back += _recoil_debt
+			_recoil_debt = 0.0
 		_set_pitch(_arm.rotation.x - back)
 
 
 ## Kick the camera pitch up by a shot's recoil; the kick eases back to the
 ## baseline in _physics_process. Called by the WeaponManager per shot.
 func add_recoil(pitch_deg: float) -> void:
-	var kick := deg_to_rad(pitch_deg)
-	_recoil_debt += kick
-	_set_pitch(_arm.rotation.x + kick)
+	var before := _arm.rotation.x
+	_set_pitch(before + deg_to_rad(pitch_deg))
+	# Owe back only what the clamp actually let through. Firing while already
+	# pitched to the ceiling would otherwise bank debt that never moved the
+	# camera, then drag it down when that debt drains.
+	_recoil_debt += _arm.rotation.x - before
+
+
+## Player-driven pitch change (mouse look). Pulling DOWN against an outstanding
+## kick PAYS OFF that debt rather than stacking with it: a player holding the
+## reticle on target has already taken the correction by hand, and charging
+## them for it again sinks the aim by the burst's whole recoil total —
+## measured at -9 deg over one rifle mag before this existed, which is what
+## sent the camera into the dirt and then the sky in the M4 playtest.
+func _add_pitch(delta_pitch: float) -> void:
+	if delta_pitch < 0.0 and _recoil_debt > 0.0:
+		_recoil_debt = maxf(_recoil_debt + delta_pitch, 0.0)
+	_set_pitch(_arm.rotation.x + delta_pitch)
 
 
 func _set_pitch(pitch: float) -> void:
