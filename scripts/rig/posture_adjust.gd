@@ -1,4 +1,9 @@
+@tool
 extends SkeletonModifier3D
+
+# @tool for parity with the rest of the rig modifiers, so the editor preview
+# matches the runtime pose. Ships with every pitch at 0.0, so it is a no-op
+# either way -- see docs/rig-tuning.md for why the global version stays zeroed.
 
 # Global posture bias: additive pitch on the spine chain, applied on top of
 # every clip. Exists because the sourced mocap holds a forward hunch with the

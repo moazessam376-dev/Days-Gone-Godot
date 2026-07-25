@@ -50,6 +50,32 @@ The tuner ships all-zero, which is a deliberate no-op: with every slider at 0
 the pose is pure mocap. Only author a correction where the mocap is actually
 wrong on this rig.
 
+### Tune the wrist in the EDITOR, not the running game (2026-07-25)
+
+The gizmo lives in the editor; the Remote dock has no gizmo. **The editor
+viewport draws the EDITED scene**, so a node selected in the Remote tree is
+inspectable but *not draggable* — you get number fields, which is the thing this
+layer exists to escape.
+
+So the wrist workflow is different from the palm/curl workflow above:
+
+1. Open **`scenes/characters/hunter.tscn`** (not `test_character.tscn` — there
+   `Hunter` is an *instanced* scene, so its skeleton is collapsed and the
+   sub-nodes are not selectable without "Editable Children").
+2. Select the **`AnimationPlayer`** and press play (or scrub) on
+   `W2_Stand_Aim_Idle_v2` — autoplay does **not** run in the editor, so without
+   this the character sits in bind pose and there is no grip to judge.
+3. Select `GeneralSkeleton/RightHandAttach/WeaponSocket/SupportGrip/WristTarget`
+   and rotate with **E**. The hand responds live.
+4. **Ctrl/Cmd+S**, then hand the numbers over for baking.
+
+This only works because the rig modifiers are **`@tool`** scripts
+(`support_hand_tuner.gd`, `finger_tip_modifier.gd`, `posture_adjust.gd`).
+Without `@tool` a `SkeletonModifier3D` runs **only at runtime** — which put the
+gizmo in the editor where the code did not run, and the code in the game where
+there was no gizmo. Numerically correct, practically unusable. If a future rig
+modifier needs hand-tuning, it needs `@tool`.
+
 ### The wrist is a gizmo now, not a number field (2026-07-25)
 
 `wrist_offset_deg` was a `Vector3` Inspector field, so rolling the palm onto a

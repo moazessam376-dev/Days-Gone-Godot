@@ -1,4 +1,13 @@
+@tool
 extends SkeletonModifier3D
+
+# @tool is LOAD-BEARING, not decoration. Without it this modifier only runs at
+# runtime -- and the runtime has no gizmo (the editor viewport draws the EDITED
+# scene, so a node picked in the Remote dock is inspectable but not draggable).
+# That left the wrist correction with a gizmo in the editor where the code did
+# not run, and running code in the game where there was no gizmo: numerically
+# correct, practically unusable. The whole point of WristTarget is that it can
+# be dragged and SEEN, so the modifier has to execute in the editor.
 
 ## Hand-authored corrections for the SUPPORT (left) hand, on top of the mocap.
 ##

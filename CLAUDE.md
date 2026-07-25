@@ -208,8 +208,11 @@ Read these before the matching task; each encodes failures that already cost thi
 
 ## Workflow
 
-- **Everything goes through PRs.** Claude branches, commits, pushes and opens the PR. **Claude never
-  merges and never pushes to `main`.** The user reviews and merges.
+- **Everything goes through PRs.** Claude branches, commits, pushes and opens the PR.
+  **Claude never pushes directly to `main`**, and **never merges unless the user has authorised
+  it** — either in the moment or for that piece of work. Asking "these are green, want me to
+  merge them?" is fine and encouraged; merging unasked is not. Default when unsure: open the PR,
+  summarise what is in it, and ask.
 - **No assumptions.** Design decisions are made with the user before implementation, not bolted on
   feature-by-feature. When something is ambiguous, ask.
 - Each phase ends with the game **runnable and actually played**.
