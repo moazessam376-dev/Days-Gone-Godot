@@ -1,12 +1,20 @@
 class_name WeaponManager
 extends Node
 
-# Weapon state owner (Phase 2 M3): which weapon is equipped and whether it is
-# in the hand, plus everything that hangs off that — the AnimationTree's
+# Weapon state owner (Phase 2 M3+M4): which weapon is equipped and whether it
+# is in the hand, plus everything that hangs off that — the AnimationTree's
 # WeaponBlend / HolsterBlend / FireClip / ReloadClip axes, hand-vs-stow mesh
 # visibility, the per-weapon rig calibration (socket, grips, pole, tuner) and
-# the camera's ADS fov. player.gd keeps locomotion and aim; M4 builds
-# firing/reload on the signals and ammo state here.
+# the camera's ADS fov. player.gd keeps locomotion and aim; firing and reload
+# (M4) live here because ammo does.
+#
+# M4 firing model, per the approved r1 rules pulled forward into the slice:
+# aim-to-shoot (LMB only fires while ADS), rpm-gated, no input buffering (a
+# blocked press is dropped, not queued), reload keeps stance but blocks fire,
+# and starting a swap or holstering cancels an in-flight reload. Dry fire
+# auto-starts a reload (r1: "auto-reload on next dry fire"). The hitscan ray
+# leaves the CAMERA centre — what the reticle covers is what gets hit; muzzle
+# flash/tracers are Phase 9 (no FX assets are imported yet).
 #
 # Swap and holster are BLENDS, not clips — no draw/holster animations exist
 # in the free set (stated honestly at the Phase 2 gate). A swap crossfades
@@ -19,10 +27,8 @@ extends Node
 signal weapon_changed(weapon: WeaponResource)
 signal holster_changed(holstered: bool)
 signal ammo_changed(mag: int, reserve: int)
-# M4 contract — reload will live here because ammo does.
-@warning_ignore("unused_signal")
+signal fired(weapon: WeaponResource)
 signal reload_started
-@warning_ignore("unused_signal")
 signal reload_finished
 
 ## Slot order matches the weapon_1 / weapon_2 input actions.
@@ -47,9 +53,16 @@ var _swap_t := -1.0
 var _swap_pending := -1
 var _mag: Array[int] = []
 var _reserve: Array[int] = []
+## Seconds until the rpm gate reopens.
+var _fire_cooldown := 0.0
+## Reload progress in seconds; -1 = not reloading.
+var _reload_t := -1.0
 
 @onready var _tree: AnimationTree = $"../AnimationTree"
 @onready var _camera_rig: Node3D = $"../CameraRig"
+@onready var _camera: Camera3D = $"../CameraRig/SpringArm3D/Camera3D"
+@onready var _anim_player: AnimationPlayer = $"../Hunter/AnimationPlayer"
+@onready var _body: PhysicsBody3D = get_parent()
 @onready var _skel: Skeleton3D = $"../Hunter/GeneralSkeleton"
 @onready var _socket: Node3D = _skel.get_node("RightHandAttach/WeaponSocket")
 @onready var _support_grip: Node3D = _socket.get_node("SupportGrip")
@@ -86,6 +99,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_request((_equipped + 1) % weapons.size(), false)
 	elif event.is_action_pressed("weapon_prev"):
 		_request((_equipped - 1 + weapons.size()) % weapons.size(), false)
+	elif event.is_action_pressed("reload"):
+		_try_reload()
 
 
 func _physics_process(delta: float) -> void:
@@ -127,6 +142,10 @@ func _physics_process(delta: float) -> void:
 	_tree.set("parameters/FireClip/blend_amount", float(weapons[_equipped].anim_set))
 	_tree.set("parameters/ReloadClip/blend_amount", float(weapons[_equipped].anim_set))
 
+	_fire_cooldown = maxf(_fire_cooldown - delta, 0.0)
+	_tick_reload(delta)
+	_tick_fire()
+
 
 ## True while a weapon mesh is in the hand — the gate for ADS and the
 ## support-hand IK (aiming a stowed gun reads as mime).
@@ -140,6 +159,111 @@ func is_swapping() -> bool:
 
 func equipped_weapon() -> WeaponResource:
 	return weapons[_equipped]
+
+
+## Mag / reserve of the equipped weapon (x = mag, y = reserve) — lets the HUD
+## draw its first frame; every later update arrives via ammo_changed.
+func ammo() -> Vector2i:
+	if _mag.is_empty():
+		return Vector2i.ZERO
+	return Vector2i(_mag[_equipped], _reserve[_equipped])
+
+
+func is_reloading() -> bool:
+	return _reload_t >= 0.0
+
+
+func _tick_fire() -> void:
+	var w := weapons[_equipped]
+	# Semi-auto fires per press, full-auto while held. A press that arrives
+	# blocked is dropped (r1: no input buffering).
+	var pulled := (
+		Input.is_action_pressed("fire") if w.auto_fire else Input.is_action_just_pressed("fire")
+	)
+	if not pulled:
+		return
+	# Aim-to-shoot: _camera_rig.ads is the single source of ADS truth,
+	# written by player.gd earlier this frame (parents process first).
+	if not _camera_rig.ads or not _gun_in_hand or is_swapping() or is_reloading():
+		return
+	if _fire_cooldown > 0.0:
+		return
+	if _mag[_equipped] <= 0:
+		_try_reload()  # r1: dry fire auto-reloads
+		return
+	_fire(w)
+
+
+func _fire(w: WeaponResource) -> void:
+	_fire_cooldown = 60.0 / maxf(w.rpm, 1.0)
+	_mag[_equipped] -= 1
+	ammo_changed.emit(_mag[_equipped], _reserve[_equipped])
+	_tree.set("parameters/FireShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	_camera_rig.add_recoil(w.recoil_pitch_deg)
+	_hitscan(w)
+	fired.emit(w)
+
+
+# Camera-centre hitscan: what the reticle covers is what gets hit. Spread is
+# a uniform cone of spread_deg around the view ray; the player's own body is
+# excluded so the over-shoulder camera can't shoot the character in the back.
+func _hitscan(w: WeaponResource) -> void:
+	var origin := _camera.global_position
+	var dir := -_camera.global_transform.basis.z
+	if w.spread_deg > 0.0:
+		var half_angle := deg_to_rad(w.spread_deg)
+		var theta := randf() * TAU
+		var r := tan(half_angle) * sqrt(randf())
+		var side := _camera.global_transform.basis.x
+		var up := _camera.global_transform.basis.y
+		dir = (dir + side * (r * cos(theta)) + up * (r * sin(theta))).normalized()
+	var query := PhysicsRayQueryParameters3D.create(origin, origin + dir * w.hitscan_range)
+	query.exclude = [_body.get_rid()]
+	var hit := _body.get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty() and hit.collider.has_method("on_shot"):
+		hit.collider.on_shot(hit.position, hit.normal, w.damage)
+
+
+func _try_reload() -> void:
+	var w := weapons[_equipped]
+	if is_reloading() or is_swapping() or not _gun_in_hand or _holstered:
+		return
+	if _mag[_equipped] >= w.mag_size or _reserve[_equipped] <= 0:
+		return
+	_reload_t = 0.0
+	# Play the reload clip at clip_length / reload_time so the hands finish
+	# exactly when the mag refills — the stat stays authoritative.
+	var clip := _anim_player.get_animation(w.reload_clip)
+	var scale := 1.0
+	if clip != null and w.reload_time > 0.0:
+		scale = clip.length / w.reload_time
+	_tree.set("parameters/ReloadScale/scale", scale)
+	_tree.set("parameters/ReloadShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	reload_started.emit()
+
+
+func _tick_reload(delta: float) -> void:
+	if not is_reloading():
+		return
+	_reload_t += delta
+	var w := weapons[_equipped]
+	if _reload_t < w.reload_time:
+		return
+	_reload_t = -1.0
+	var take := mini(w.mag_size - _mag[_equipped], _reserve[_equipped])
+	_mag[_equipped] += take
+	_reserve[_equipped] -= take
+	ammo_changed.emit(_mag[_equipped], _reserve[_equipped])
+	reload_finished.emit()
+
+
+# r1 interrupt rule: starting a swap or holstering cancels the reload —
+# progress lost, no refill, the one-shot fades back out.
+func _cancel_reload() -> void:
+	if not is_reloading():
+		return
+	_reload_t = -1.0
+	_tree.set("parameters/ReloadShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
 
 
 func _request(slot: int, same_key_holsters := true) -> void:
@@ -157,6 +281,7 @@ func _request(slot: int, same_key_holsters := true) -> void:
 		_apply_weapon(slot)
 		_set_holstered(false)
 		return
+	_cancel_reload()
 	_swap_pending = slot
 	_swap_t = 0.0
 
@@ -185,6 +310,8 @@ func _apply_weapon(slot: int) -> void:
 func _set_holstered(holstered: bool) -> void:
 	if _holstered == holstered:
 		return
+	if holstered:
+		_cancel_reload()
 	_holstered = holstered
 	holster_changed.emit(holstered)
 

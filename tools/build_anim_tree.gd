@@ -20,7 +20,7 @@ extends SceneTree
 #                                        |
 #              FireShot(OneShot, upper-body filter, shot=FireClip)
 #                                        |
-#              ReloadShot(OneShot, upper-body filter, shot=ReloadClip)
+#              ReloadShot(OneShot, upper-body filter, shot=ReloadScale->ReloadClip)
 #                                        |
 #                                     output
 #
@@ -91,8 +91,19 @@ const RIFLE_AIM := [
 ]
 const RIFLE_AIM_POSE := "W2_Stand_Aim_Idle_v2"
 
-const FIRE_CLIPS := ["W1_Stand_Fire_Single", "R_Fire"]
-const RELOAD_CLIPS := ["W1_Reload", "R_Reload"]
+# The fire/reload one-shot clips come from the weapon .tres files (fire_clip /
+# reload_clip, set in build_weapons.gd), indexed into the FireClip/ReloadClip
+# pickers by each weapon's anim_set — adding a weapon set means adding data,
+# not editing this tool. Run build_weapons.gd before this one.
+const WEAPON_RES := [
+	"res://resources/weapons/revolver.tres",
+	"res://resources/weapons/assault_rifle.tres",
+]
+
+# One-shot blend fades: a gunshot snaps in (0.02) and eases out; the reload
+# eases both ways so the arms don't teleport onto the mag.
+const FIRE_FADE := Vector2(0.02, 0.15)
+const RELOAD_FADE := Vector2(0.1, 0.2)
 
 
 func _init() -> void:
@@ -175,18 +186,35 @@ func _init() -> void:
 	tree.add_node("WeaponBlend", AnimationNodeBlend2.new(), Vector2(-200, -150))
 	tree.add_node("HolsterBlend", AnimationNodeBlend2.new(), Vector2(0, -50))
 
-	tree.add_node("FirePistol", _anim(FIRE_CLIPS[0]), Vector2(-200, -450))
-	tree.add_node("FireRifle", _anim(FIRE_CLIPS[1]), Vector2(-200, -350))
+	var fire_clips: Array[String] = ["", ""]
+	var reload_clips: Array[String] = ["", ""]
+	for path: String in WEAPON_RES:
+		var w: Resource = load(path)
+		if w == null or String(w.fire_clip).is_empty() or String(w.reload_clip).is_empty():
+			push_error("weapon resource missing fire/reload clips: " + path)
+			quit(1)
+			return
+		fire_clips[int(w.anim_set)] = String(w.fire_clip)
+		reload_clips[int(w.anim_set)] = String(w.reload_clip)
+
+	tree.add_node("FirePistol", _anim(fire_clips[0]), Vector2(-200, -450))
+	tree.add_node("FireRifle", _anim(fire_clips[1]), Vector2(-200, -350))
 	tree.add_node("FireClip", AnimationNodeBlend2.new(), Vector2(0, -400))
-	tree.add_node("ReloadPistol", _anim(RELOAD_CLIPS[0]), Vector2(0, -550))
-	tree.add_node("ReloadRifle", _anim(RELOAD_CLIPS[1]), Vector2(0, -450))
+	tree.add_node("ReloadPistol", _anim(reload_clips[0]), Vector2(0, -550))
+	tree.add_node("ReloadRifle", _anim(reload_clips[1]), Vector2(0, -450))
 	tree.add_node("ReloadClip", AnimationNodeBlend2.new(), Vector2(200, -500))
-	tree.add_node("FireShot", _one_shot(filter_paths), Vector2(200, -100))
-	tree.add_node("ReloadShot", _one_shot(filter_paths), Vector2(400, -100))
+	# ReloadScale lets the WeaponManager play the reload clip at
+	# clip_length / reload_time — the stat stays authoritative and the hands
+	# finish exactly when the mag refills (W1_Reload is 4.97 s vs the
+	# revolver's 2.6 s reload_time).
+	tree.add_node("ReloadScale", AnimationNodeTimeScale.new(), Vector2(300, -400))
+	tree.add_node("FireShot", _one_shot(filter_paths, FIRE_FADE), Vector2(200, -100))
+	tree.add_node("ReloadShot", _one_shot(filter_paths, RELOAD_FADE), Vector2(400, -100))
 	tree.connect_node("FireClip", 0, "FirePistol")
 	tree.connect_node("FireClip", 1, "FireRifle")
 	tree.connect_node("ReloadClip", 0, "ReloadPistol")
 	tree.connect_node("ReloadClip", 1, "ReloadRifle")
+	tree.connect_node("ReloadScale", 0, "ReloadClip")
 
 	tree.connect_node("PistolMove", 0, "PistolCarry")
 	tree.connect_node("PistolMove", 1, "PistolAim")
@@ -199,7 +227,7 @@ func _init() -> void:
 	tree.connect_node("FireShot", 0, "HolsterBlend")
 	tree.connect_node("FireShot", 1, "FireClip")
 	tree.connect_node("ReloadShot", 0, "FireShot")
-	tree.connect_node("ReloadShot", 1, "ReloadClip")
+	tree.connect_node("ReloadShot", 1, "ReloadScale")
 	tree.connect_node("output", 0, "ReloadShot")
 
 	DirAccess.make_dir_recursive_absolute(OUT.get_base_dir())
@@ -235,9 +263,11 @@ func _space_2d(points: Array) -> AnimationNodeBlendSpace2D:
 	return space
 
 
-func _one_shot(filter_paths: Array[String]) -> AnimationNodeOneShot:
+func _one_shot(filter_paths: Array[String], fade: Vector2) -> AnimationNodeOneShot:
 	var shot := AnimationNodeOneShot.new()
 	shot.filter_enabled = true
+	shot.fadein_time = fade.x
+	shot.fadeout_time = fade.y
 	for p in filter_paths:
 		shot.set_filter_path(p, true)
 	return shot

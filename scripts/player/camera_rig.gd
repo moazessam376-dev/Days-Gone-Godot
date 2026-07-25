@@ -18,6 +18,12 @@ var shoulder_side := 1.0
 ## the tuning default until the first equip).
 var ads_fov := 42.0
 
+## Recoil pitch still owed back to the baseline, radians. A shot kicks the
+## camera up instantly; this drains it back down over recoil_recover_time so
+## there is no permanent aim drift (per-weapon recoil IDENTITY is Phase 9 —
+## this is the M4 minimum that makes a shot feel like a shot).
+var _recoil_debt := 0.0
+
 @onready var _arm: SpringArm3D = $SpringArm3D
 @onready var _camera: Camera3D = $SpringArm3D/Camera3D
 
@@ -55,6 +61,25 @@ func _physics_process(delta: float) -> void:
 
 	var sw := _smooth_weight(tuning.shoulder_swap_time, delta)
 	_arm.position.x = lerpf(_arm.position.x, target_x, sw)
+
+	if _recoil_debt > 0.0:
+		var back := _recoil_debt * _smooth_weight(tuning.recoil_recover_time, delta)
+		_recoil_debt -= back
+		_set_pitch(_arm.rotation.x - back)
+
+
+## Kick the camera pitch up by a shot's recoil; the kick eases back to the
+## baseline in _physics_process. Called by the WeaponManager per shot.
+func add_recoil(pitch_deg: float) -> void:
+	var kick := deg_to_rad(pitch_deg)
+	_recoil_debt += kick
+	_set_pitch(_arm.rotation.x + kick)
+
+
+func _set_pitch(pitch: float) -> void:
+	_arm.rotation.x = clampf(
+		pitch, deg_to_rad(tuning.pitch_min_deg), deg_to_rad(tuning.pitch_max_deg)
+	)
 
 
 ## Frame-rate-independent smoothing weight that covers ~95% of the remaining

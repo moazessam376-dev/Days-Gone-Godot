@@ -78,6 +78,9 @@ func _revolver() -> WeaponResource:
 	w.stow_position = Vector3(-0.26, 0.03, -0.09)
 	w.stow_rotation_deg = Vector3(72, 0, 8)
 
+	w.fire_clip = &"W1_Stand_Fire_Single"
+	w.reload_clip = &"W1_Reload"
+
 	w.damage = 65.0
 	w.rpm = 130.0
 	w.auto_fire = false
@@ -150,6 +153,9 @@ func _assault_rifle() -> WeaponResource:
 	w.stow_socket = "back"
 	w.stow_position = Vector3(-0.18, -0.30, -0.16)
 	w.stow_rotation_deg = Vector3(-50, 90, -90)
+
+	w.fire_clip = &"R_Fire"
+	w.reload_clip = &"R_Reload"
 
 	w.damage = 18.0
 	w.rpm = 600.0
