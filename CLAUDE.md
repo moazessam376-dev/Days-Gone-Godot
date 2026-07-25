@@ -189,8 +189,32 @@ Read these before the matching task; each encodes failures that already cost thi
   pose that is wrong in game but clean in the raw clip (probe A/B method lives here).
 - **`.claude/skills/godot-animation-pipeline/`** — before choosing/downloading animation clips,
   adding a clip source to `build_character.gd`, editing `build_anim_tree.gd` or AnimationTree
-  blends, or diagnosing a wrong pose/gait. Clip selection by measurement, per-family build-time
-  corrections, filtered-blend composition, dual-mixer conflicts.
+  blends, or diagnosing a wrong pose/gait. The **single-rig invariant**, how to verify a clip's
+  rig, clip selection by measurement, per-family build-time corrections, filtered-blend
+  composition, dual-mixer conflicts.
+- **`.claude/skills/godot-human-in-the-loop/`** — before any task judged by eye (pose, grip,
+  camera, feel), before telling the user to adjust something, and before baking hand-tuned values
+  back into a generator. The mandatory handoff format and the read-back-and-bake loop.
+- **`.claude/skills/blender-authoring/`** — before writing any `bpy`, importing the Synty
+  character into Blender, building the control rig, or exporting a clip. Pinned version, the
+  duplicate-bone-name trap, the humanoid-name convention, glTF settings, and the rule that
+  authored clips get no retarget and no correction.
+
+## The single-rig invariant (Phase 2 onward)
+
+> **No blend space and no held blend may mix clips from two source rigs.** A brief
+> *transition* crossfade between two single-rig states is permitted; a resting state is not.
+
+Adopted 2026-07-25 after measurement found the animation library fed by **four** source rigs
+(MotusMan, Mixamo, Quaternius, all retargeted onto Synty) and blend spaces mixing them freely.
+The rifle's fire clip was Mixamo while its socket was calibrated on a MotusMan pose — a
+measured **48.9°** shoulder delta swapped in on every trigger pull, which threw the weapon the
+same direction every shot and was chased as a physics bug for multiple sessions. It was data.
+
+`tools/build_anim_tree.gd` holds a clip → rig provenance table and **fails the build** if one
+blend space contains two rigs. Do not weaken the assert to land a clip — drop the clip, or
+author a replacement in Blender. Full evidence and the one accepted exception:
+`.claude/skills/godot-animation-pipeline/`.
 
 ## Workflow
 
