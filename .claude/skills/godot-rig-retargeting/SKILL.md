@@ -1,12 +1,24 @@
 ---
 name: godot-rig-retargeting
-description: Read BEFORE importing a character or animation FBX, editing a BoneMap, adding a SkeletonModifier3D (TwoBoneIK3D, LookAtModifier3D), attaching a weapon to a bone, or diagnosing a pose that is wrong in game but clean in the raw clip. Covers the working retarget pipeline for Synty + MoCap Online rigs, the probe A/B method for attributing a bad pose to its modifier, and the verification traps that produce confidently wrong conclusions. Use when importing the Rifle Pro pack, the zombie set, or any new character.
+description: Read BEFORE importing a character or animation FBX, editing a BoneMap, adding a SkeletonModifier3D (TwoBoneIK3D, LookAtModifier3D), attaching a weapon to a bone, or diagnosing a pose that is wrong in game but clean in the raw clip. Covers the working retarget pipeline for Synty + MoCap Online rigs, why a BoneMap holds no rest poses and what to measure instead, the probe A/B method for attributing a bad pose to its modifier, and the verification traps that produce confidently wrong conclusions. Use when importing a new pack or character, and to know when a clip needs no retarget at all.
 ---
 
 # Retargeting and skeleton modifiers in this project
 
 The pipeline works and is proven (see `docs/rig-tuning.md`). This is how to
 extend it without re-learning the traps.
+
+## When NOT to retarget at all
+
+A clip **authored in Blender on the Synty skeleton** needs none of this page.
+No BoneMap, no Rest Fixer, no `fix_silhouette`, no `overwrite_axis`, no
+build-time correction — there is no second rig, so there is no residual to
+normalise. Running an authored clip through `configure_imports.gd` *introduces*
+the defects the rest of this document exists to undo.
+
+Everything below applies to **sourced** clips only. See `blender-authoring`
+for the authored path, and `tools/rig/import_authored.gd`, which asserts the
+authored directory never acquires a BoneMap.
 
 ## The pipeline in one paragraph
 
@@ -64,6 +76,37 @@ retargeted at runtime. `tools/rig/configure_imports.gd` wires this up;
 
 **General rule:** any bone the BoneMap does not map is NOT axis-normalised. Do
 not compute relative transforms between mapped and unmapped bones.
+
+## A BoneMap holds no rest poses — do not try to diff them
+
+A `BoneMap` `.tres` is a `SkeletonProfileHumanoid` plus ~55
+`bone_map/<Slot> = &"<source bone name>"` string pairs. **That is all it is.**
+There is no `Spine` rotation, no rest transform, no per-bone delta in the file.
+
+This matters because "print the rest-pose rotation of Spine/Chest/UpperChest
+from each BoneMap and show the deltas" is a natural-sounding request that has
+no answer, and producing a table for it means inventing numbers — the exact
+*confident measurement of the wrong thing* this project has shipped three times.
+
+**What to measure instead.** The thing that reaches the screen is the pose
+delta between clips *after* retarget, on the target skeleton. Read it off the
+baked library:
+
+```
+mcp__godot-mcp__godot_animation_read  get_details    → track index for a bone
+mcp__godot-mcp__godot_animation_read  get_keyframes  → quaternion keys
+```
+
+against `Hunter/AnimationPlayer` in the open scene, then
+`angle = 2·acos(|q1·q2|)`. This is **read-only, needs no running game, and no
+script file** — the editor already has the library loaded. It is the cheapest
+honest measurement in the toolbox and it is how the 48.9° `RightShoulder`
+delta behind the rifle-fire bug was found (see `godot-animation-pipeline`).
+
+Caveat that keeps it honest: these are **local** bone rotations. A large local
+delta on a chain is strong evidence, not proof of where the hand lands —
+downstream bones can partially compensate. For where the hand actually ends up,
+use the post-modifier `BoneAttachment3D` probe below.
 
 ## Weapons
 
