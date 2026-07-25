@@ -780,6 +780,10 @@ func _instance_weapon(w: WeaponResource) -> Node3D:
 	var gun: Node3D = w.mesh_scene.instantiate()
 	gun.name = String(w.id)
 	gun.position = w.mesh_offset
+	# Mesh ROTATION is bakeable too. It was position-only, so rotating the gun
+	# node in the editor — the natural way to seat it in the right fist without
+	# disturbing SupportGrip — was silently reverted by the next rebuild.
+	gun.rotation = w.mesh_rotation_deg * (PI / 180.0)
 	var gm := _find_mesh(gun)
 	if gm != null:
 		var gmat := StandardMaterial3D.new()

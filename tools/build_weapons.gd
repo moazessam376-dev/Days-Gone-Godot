@@ -112,10 +112,15 @@ func _assault_rifle() -> WeaponResource:
 	# the LookAt chain, so an influence change re-pitches the gun — see
 	# LOOKAT_ADS_RIFLE in player.gd). ADS probes level; carry rakes ~-49, a
 	# steep-but-fine low carry.
-	w.socket_basis_x = Vector3(0.113889, 0.012759, 0.993412)
-	w.socket_basis_y = Vector3(0.760946, 0.641751, -0.095481)
-	w.socket_basis_z = Vector3(-0.638741, 0.766807, 0.063380)
-	w.socket_origin = Vector3.ZERO
+	# Hand-placed by the user 2026-07-26 — the FIRST time this socket was set by
+	# eye rather than by the measured screenshot loop, and the change that fixed
+	# the gun sitting wrong in the right fist. Note socket_origin is no longer
+	# zero: the gun needed moving ~10.6 cm out of the wrist as well as rotating.
+	# Read out of the saved hunter.tscn, not reconstructed from Euler.
+	w.socket_basis_x = Vector3(0.121227, -0.003536, 0.992619)
+	w.socket_basis_y = Vector3(0.768003, 0.633871, -0.091538)
+	w.socket_basis_z = Vector3(-0.628868, 0.773431, 0.079558)
+	w.socket_origin = Vector3(0.105734, 0.037378, 0.048830)
 	# Negated grip centroid (112 verts, y < -0.02, -0.12 < z < 0.02, measured
 	# 2026-07-23: (-0.0012, -0.0611, -0.0183)) PLUS the revolver's hand-finish
 	# delta (+0.013, +0.0215, +0.078) — the fist-vs-centroid correction the
@@ -141,7 +146,7 @@ func _assault_rifle() -> WeaponResource:
 	# rifle state -- there is no per-clip grip tuning.
 	# Note it sits only ~8 mm behind the ADS point (z 0.2755 vs 0.2838) but
 	# 4 cm higher: the carry differs mostly in hand HEIGHT, not reach.
-	w.carry_support_grip_pos = Vector3(0.0600682, 0.0448443, 0.2755048)
+	w.carry_support_grip_pos = Vector3(0.067523, 0.055392, 0.283459)
 	w.elbow_pole_pos = Vector3(0.915536, 1.0, 0.15)
 
 	# Authored by the user live in the running game (calibration_freeze
@@ -155,12 +160,12 @@ func _assault_rifle() -> WeaponResource:
 	# negative to OPEN the thumb over the handguard instead of closing it.
 	# Axes are stored unnormalised on purpose — the tuner normalises, so only
 	# their direction matters and these are the values as dialled.
-	w.wrist_offset_deg = Vector3(-37.3, 109.7, 41.0)
+	w.wrist_offset_deg = Vector3(-10.580438, 112.45559, 26.64803)
 	w.thumb_curl = -90.0
-	w.index_curl = 30.0
-	w.middle_curl = 30.0
-	w.curl_axis = Vector3(15.72, 12.44, 4.01)
-	w.thumb_axis = Vector3(-5.94, -2.76, -10.11)
+	w.index_curl = -90.0
+	w.middle_curl = -73.5
+	w.curl_axis = Vector3(4.39, -27.36, -28.03)
+	w.thumb_axis = Vector3(-5.94, 4.35, -7.94)
 
 	# Days Gone diagonal back carry. SEED ONLY. UpperChest-bone space: grip
 	# lands at the lower back right (-X right, -Y down, -Z behind); the
