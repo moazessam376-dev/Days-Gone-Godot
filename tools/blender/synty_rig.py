@@ -34,10 +34,19 @@ UNMAPPED_TIP_BONES = {
 # job of resolve_synty_names(). See .claude/skills/blender-authoring/.
 RIGHT_DUP_SUFFIX = "_2"
 
-# Never keyed, though it IS a mapped bone. Clips that key Root poison every later
-# clip that does not (the character holds the stale root pose) -- which is why
-# Godot's build runs _collapse_root_into_hips(). In-place clips move Hips only.
+# Never MOVED, though it IS a mapped bone. Clips that animate Root poison every
+# later clip that does not (the character holds the stale root pose) -- which is
+# why Godot's build runs _collapse_root_into_hips(). In-place clips move Hips only.
 ROOT_BONE = "Root"
+
+# Synty bones with no humanoid slot. They exist on the skeleton and the glTF
+# exporter emits (identity) tracks for them, so their PRESENCE is fine -- what
+# must never happen is them MOVING. Measured off Characters.fbx, not guessed.
+UNMAPPED_SKELETON_BONES = {"Eyes", "Eyebrows", "Toes_L", "Toes_R"}
+
+# The one bone allowed to translate. Everything else is pure rotation: differing
+# limb lengths between rigs mean translation tears the mesh.
+TRANSLATING_BONE = "Hips"
 
 # MEASURED against Characters.fbx on Blender 4.5.12, not taken from the docs:
 # ignore_leaf_bones=True drops 8 REAL bones, including Thumb_03 / Thumb_03.001 --

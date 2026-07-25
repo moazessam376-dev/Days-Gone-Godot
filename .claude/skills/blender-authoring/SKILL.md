@@ -184,6 +184,29 @@ caused the original rifle-fire bug comes straight back.
 **A validator that has never failed has not been tested.** Run it against a
 deliberately broken clip and watch it fail before trusting a pass.
 
+### The self-test
+
+Generate one clean clip and one per defect class — scale keys, hips drift, a
+keyed `Root`, a moving finger tip, a surviving `.001` name — export each, and
+assert `check_clip.py` exits 1 on every broken one **naming that specific
+defect**, and 0 on the clean one. Exit codes alone are not enough: a validator
+that fails everything also "fails the broken clip".
+
+Two things this self-test already caught, both worth knowing before you write
+a check:
+
+- **Presence is not motion.** `export_bake_animation` + `export_force_sampling`
+  (which we want — sampled keys are what Godot reads reliably) emit a full
+  location/rotation/scale track for **every** bone, `Root` and unmapped bones
+  included: a clean 9-frame clip exports ~500 fcurves across 50 bones. A first
+  version of `check_clip.py` checked whether a track *existed* and therefore
+  failed every clip it was handed, good ones included. Check the **value's
+  deviation from rest**, never the track's existence.
+- **Set your tolerances from a measurement.** A glTF round-trip leaves ~0.73° of
+  residual rotation across a hand chain that was never keyed — sampling and
+  quantisation. A 0.5° threshold calls that a defect; 2.0° clears the noise and
+  still catches anything authored. Measure the noise floor, then pick.
+
 ## What stays the user's
 
 Keyframing. All of it. Pose, timing, weight, follow-through.
