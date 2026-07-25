@@ -113,6 +113,23 @@ var _target_cache: Node3D = null
 var _right_target_cache: Node3D = null
 
 
+# A @tool script that gains a new @export while the editor is holding a LIVE
+# instance leaves that property NIL on the existing node until the scene is
+# reloaded. Reading it then throws "Cannot convert argument 2 from Nil to float"
+# every single frame, which reads as a logic bug in this file and is not one.
+#
+# Costs nothing to be defensive, and it means adding a control never floods the
+# user's editor with errors mid-session.
+func _f(prop: StringName) -> float:
+	var v: Variant = get(prop)
+	return float(v) if v != null else 0.0
+
+
+func _v3(prop: StringName) -> Vector3:
+	var v: Variant = get(prop)
+	return v if v is Vector3 else Vector3.ZERO
+
+
 func _right_wrist_target() -> Node3D:
 	if _right_target_cache != null and is_instance_valid(_right_target_cache):
 		return _right_target_cache
@@ -163,15 +180,16 @@ func _process_modification() -> void:
 	if right_target != null:
 		right_wrist_offset_deg = right_target.rotation_degrees
 
-	if _right_wrist >= 0 and right_wrist_offset_deg != Vector3.ZERO:
-		var roff := Quaternion.from_euler(right_wrist_offset_deg * (PI / 180.0))
+	var right_off := _v3(&"right_wrist_offset_deg")
+	if _right_wrist >= 0 and right_off != Vector3.ZERO:
+		var roff := Quaternion.from_euler(right_off * (PI / 180.0))
 		skel.set_bone_pose_rotation(
 			_right_wrist, skel.get_bone_pose_rotation(_right_wrist) * roff
 		)
 
-	_curl("right_thumb", right_thumb_curl, thumb_axis, skel)
-	_curl("right_index", right_index_curl, curl_axis, skel)
-	_curl("right_middle", right_middle_curl, curl_axis, skel)
+	_curl("right_thumb", _f(&"right_thumb_curl"), thumb_axis, skel)
+	_curl("right_index", _f(&"right_index_curl"), curl_axis, skel)
+	_curl("right_middle", _f(&"right_middle_curl"), curl_axis, skel)
 
 
 func _curl(chain: String, degrees: float, axis: Vector3, skel: Skeleton3D) -> void:
