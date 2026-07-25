@@ -69,6 +69,7 @@ var _reload_t := -1.0
 @onready var _elbow_pole: Node3D = _skel.get_node("LeftElbowPole")
 @onready var _tuner: SkeletonModifier3D = _skel.get_node("SupportHandTuner")
 @onready var _wrist_target: Node3D = _support_grip.get_node_or_null("WristTarget")
+@onready var _right_wrist_target: Node3D = _socket.get_node_or_null("RightWristTarget")
 
 
 func _ready() -> void:
@@ -309,6 +310,13 @@ func _apply_weapon(slot: int) -> void:
 		_tuner.set("middle_curl", w.middle_curl)
 		_tuner.set("curl_axis", w.curl_axis)
 		_tuner.set("thumb_axis", w.thumb_axis)
+		if _right_wrist_target != null:
+			_right_wrist_target.rotation_degrees = w.right_wrist_offset_deg
+		else:
+			_tuner.set("right_wrist_offset_deg", w.right_wrist_offset_deg)
+		_tuner.set("right_thumb_curl", w.right_thumb_curl)
+		_tuner.set("right_index_curl", w.right_index_curl)
+		_tuner.set("right_middle_curl", w.right_middle_curl)
 	_camera_rig.set("ads_fov", w.ads_fov)
 	_refresh_visibility()
 	weapon_changed.emit(w)

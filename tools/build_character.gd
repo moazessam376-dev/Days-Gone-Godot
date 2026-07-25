@@ -633,6 +633,15 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	support.add_child(wrist)
 	wrist.rotation_degrees = equipped.wrist_offset_deg
 
+	# The GUN hand's roll. Parented to the SOCKET (not SupportGrip) because it
+	# belongs to the hand holding the weapon, not to the support grip point.
+	# Rotating it carries the gun with it — see the caution on
+	# SupportHandTuner.right_wrist_target.
+	var right_wrist := Node3D.new()
+	right_wrist.name = "RightWristTarget"
+	socket.add_child(right_wrist)
+	right_wrist.rotation_degrees = equipped.right_wrist_offset_deg
+
 	# Days Gone body carry: one stow point per body socket, its transform
 	# owned by the weapon stowed there. The user drags HipStow / BackStow to
 	# place; the values bake into build_weapons.gd.
@@ -749,6 +758,11 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	# them on every equip; the scene ships the default weapon's set.
 	tuner.wrist_target = NodePath("../RightHandAttach/WeaponSocket/SupportGrip/WristTarget")
 	tuner.wrist_offset_deg = equipped.wrist_offset_deg
+	tuner.right_wrist_target = NodePath("../RightHandAttach/WeaponSocket/RightWristTarget")
+	tuner.right_wrist_offset_deg = equipped.right_wrist_offset_deg
+	tuner.right_thumb_curl = equipped.right_thumb_curl
+	tuner.right_index_curl = equipped.right_index_curl
+	tuner.right_middle_curl = equipped.right_middle_curl
 	tuner.thumb_curl = equipped.thumb_curl
 	tuner.index_curl = equipped.index_curl
 	tuner.middle_curl = equipped.middle_curl
@@ -766,6 +780,10 @@ func _instance_weapon(w: WeaponResource) -> Node3D:
 	var gun: Node3D = w.mesh_scene.instantiate()
 	gun.name = String(w.id)
 	gun.position = w.mesh_offset
+	# Mesh ROTATION is bakeable too. It was position-only, so rotating the gun
+	# node in the editor — the natural way to seat it in the right fist without
+	# disturbing SupportGrip — was silently reverted by the next rebuild.
+	gun.rotation = w.mesh_rotation_deg * (PI / 180.0)
 	var gm := _find_mesh(gun)
 	if gm != null:
 		var gmat := StandardMaterial3D.new()

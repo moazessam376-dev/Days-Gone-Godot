@@ -23,26 +23,26 @@ sky = SubResource("Sky_ojpq0")
 ambient_light_source = 3
 ambient_light_energy = 0.6
 
-[node name="TestCharacter" type="Node3D" unique_id=2014455283]
+[node name="TestCharacter" type="Node3D" unique_id=1543765609]
 
-[node name="Ground" type="StaticBody3D" parent="." unique_id=612202311]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=952170875]
 
-[node name="Mesh" type="MeshInstance3D" parent="Ground" unique_id=1356877236]
+[node name="Mesh" type="MeshInstance3D" parent="Ground" unique_id=418480572]
 mesh = SubResource("PlaneMesh_84abk")
 
-[node name="Collision" type="CollisionShape3D" parent="Ground" unique_id=1965146543]
+[node name="Collision" type="CollisionShape3D" parent="Ground" unique_id=538049448]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 shape = SubResource("BoxShape3D_cu1ws")
 
 [node name="Hunter" type="Node3D" parent="." unique_id=2077319157 instance=ExtResource("1_1ft0k")]
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=1655202964]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1407137443]
 transform = Transform3D(1, 0, 0, 0, 0.9945219, 0.104528464, 0, -0.104528464, 0.9945219, 0, 1.2, 3.2)
 
-[node name="Sun" type="DirectionalLight3D" parent="." unique_id=262879761]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=94504823]
 transform = Transform3D(0.81915206, 0.4055798, -0.4055798, 0, 0.70710677, 0.70710677, 0.57357645, -0.579228, 0.579228, 0, 0, 0)
 light_energy = 1.1
 shadow_enabled = true
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=635181080]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=697016328]
 environment = SubResource("Environment_6ropc")

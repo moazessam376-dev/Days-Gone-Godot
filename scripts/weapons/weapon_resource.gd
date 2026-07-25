@@ -56,6 +56,23 @@ extends Resource
 @export var curl_axis := Vector3(1, 0, 0)
 @export var thumb_axis := Vector3(0.728, 0.0, 0.685)
 
+## Gun (right) hand corrections, per weapon. Same idea as the support-hand set
+## above: how wrong the clip's GUN hand is on this rig holding THIS weapon.
+## Right-wrist rotation carries the weapon with it (the gun hangs off the
+## RightHand bone), so it aims the gun — use the curls to wrap the fingers on
+## the grip, and WeaponSocket/mesh_offset to re-seat the gun in the hand.
+## Rotation of the weapon MESH inside the socket. Separate from the socket basis
+## on purpose: the socket is the parent of SupportGrip and both wrist targets, so
+## rotating IT drags the support-hand calibration along with it. Rotating the
+## mesh node moves only the gun, which is what you want when the gun sits wrong
+## in the right fist but the left hand is already placed.
+@export var mesh_rotation_deg := Vector3.ZERO
+
+@export var right_wrist_offset_deg := Vector3.ZERO
+@export_range(-90.0, 90.0, 0.5) var right_thumb_curl := 0.0
+@export_range(-90.0, 90.0, 0.5) var right_index_curl := 0.0
+@export_range(-90.0, 90.0, 0.5) var right_middle_curl := 0.0
+
 @export_group("Stow")
 ## Which body socket carries the weapon while not equipped (Days Gone style:
 ## the non-equipped weapon stays visible, stowed on the body).

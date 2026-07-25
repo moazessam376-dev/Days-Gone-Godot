@@ -112,10 +112,15 @@ func _assault_rifle() -> WeaponResource:
 	# the LookAt chain, so an influence change re-pitches the gun — see
 	# LOOKAT_ADS_RIFLE in player.gd). ADS probes level; carry rakes ~-49, a
 	# steep-but-fine low carry.
-	w.socket_basis_x = Vector3(0.113889, 0.012759, 0.993412)
-	w.socket_basis_y = Vector3(0.760946, 0.641751, -0.095481)
-	w.socket_basis_z = Vector3(-0.638741, 0.766807, 0.063380)
-	w.socket_origin = Vector3.ZERO
+	# Hand-placed by the user 2026-07-26 — the FIRST time this socket was set by
+	# eye rather than by the measured screenshot loop, and the change that fixed
+	# the gun sitting wrong in the right fist. Note socket_origin is no longer
+	# zero: the gun needed moving ~10.6 cm out of the wrist as well as rotating.
+	# Read out of the saved hunter.tscn, not reconstructed from Euler.
+	w.socket_basis_x = Vector3(0.121227, -0.003536, 0.992619)
+	w.socket_basis_y = Vector3(0.768003, 0.633871, -0.091538)
+	w.socket_basis_z = Vector3(-0.628868, 0.773431, 0.079558)
+	w.socket_origin = Vector3(0.105734, 0.037378, 0.048830)
 	# Negated grip centroid (112 verts, y < -0.02, -0.12 < z < 0.02, measured
 	# 2026-07-23: (-0.0012, -0.0611, -0.0183)) PLUS the revolver's hand-finish
 	# delta (+0.013, +0.0215, +0.078) — the fist-vs-centroid correction the
@@ -126,24 +131,41 @@ func _assault_rifle() -> WeaponResource:
 	# Iterated against screenshots: pulled back to the guard's rear third (a
 	# far-forward target straightened the elbow — user), then raised toward
 	# the underside ("the left palm is on the air").
-	w.support_grip_pos = Vector3(0.06, 0.075, 0.33)
+	# Hand-placed by the user on the gizmo, 2026-07-25, in hunter.tscn with the
+	# AnimationPlayer previewing W2_Stand_Aim_Idle_v2 ("happy with this").
+	# Replaces the screenshot-loop seed (0.06, 0.075, 0.33): further forward
+	# along the handguard and slightly inboard.
+	w.support_grip_pos = Vector3(0.0967697, 0.005177, 0.2837636)
 	# CARRY grip: just ahead of the mag well, close to the right hand — the
 	# handguard point over-reached the arm in the low carry ("left arm is
 	# still over/hyper extended ... normalize the space between two hands on
 	# relaxed" — user). player.gd lerps between the two with stance.
-	w.carry_support_grip_pos = Vector3(0.06, 0.06, 0.22)
+	# Low-carry grip, hand-placed by the user 2026-07-26 previewing
+	# W2_Stand_Relaxed_Idle_v2. player.gd lerps SupportGrip between this and
+	# support_grip_pos by the stance blend, so these two points cover every
+	# rifle state -- there is no per-clip grip tuning.
+	# Note it sits only ~8 mm behind the ADS point (z 0.2755 vs 0.2838) but
+	# 4 cm higher: the carry differs mostly in hand HEIGHT, not reach.
+	w.carry_support_grip_pos = Vector3(0.067523, 0.055392, 0.283459)
 	w.elbow_pole_pos = Vector3(0.915536, 1.0, 0.15)
 
 	# Authored by the user live in the running game (calibration_freeze
 	# session, 2026-07-23) — in-progress values banked from their Inspector
 	# screenshots so a crash or restart cannot lose them; the session is
 	# still refining.
-	w.wrist_offset_deg = Vector3(-7, 18, -3)
-	w.thumb_curl = 55.0
-	w.index_curl = 30.0
-	w.middle_curl = 35.0
-	w.curl_axis = Vector3(1.0, 0.0, 1.5)
-	w.thumb_axis = Vector3(0.7, 0.0, 0.6)
+	# Support (left) hand, hand-finished by the user 2026-07-25 on the WristTarget
+	# gizmo + tuner sliders, previewing W2_Stand_Aim_Idle_v2 in hunter.tscn.
+	# The wrist is a big correction because the MotusMan clip's left hand is
+	# posed for its own foregrip, not the Synty AK's; thumb_curl swings fully
+	# negative to OPEN the thumb over the handguard instead of closing it.
+	# Axes are stored unnormalised on purpose — the tuner normalises, so only
+	# their direction matters and these are the values as dialled.
+	w.wrist_offset_deg = Vector3(-10.580438, 112.45559, 26.64803)
+	w.thumb_curl = -90.0
+	w.index_curl = -90.0
+	w.middle_curl = -73.5
+	w.curl_axis = Vector3(4.39, -27.36, -28.03)
+	w.thumb_axis = Vector3(-5.94, 4.35, -7.94)
 
 	# Days Gone diagonal back carry. SEED ONLY. UpperChest-bone space: grip
 	# lands at the lower back right (-X right, -Y down, -Z behind); the

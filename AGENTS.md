@@ -26,8 +26,9 @@ Do not duplicate content from `CLAUDE.md` into this file. Two sources of truth d
 
 ## Three hard rules
 
-- **Everything goes through PRs.** Branch, commit, push, open. **Never merge, never push
-  to `main`.** The user reviews and merges.
+- **Everything goes through PRs.** Branch, commit, push, open. **Never push directly to
+  `main`**, and **never merge unless the user has authorised it**. Asking "these are green,
+  want me to merge?" is encouraged; merging unasked is not.
 - **The user places, Claude plumbs.** Anything needing "move it, look, move it again" is
   the user's, in the editor, with a gizmo. Claude builds the control, verifies its axis,
   reads the values back and bakes them. Never tune a pose by screenshot.

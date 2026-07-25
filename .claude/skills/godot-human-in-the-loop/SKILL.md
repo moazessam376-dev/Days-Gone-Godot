@@ -68,6 +68,34 @@ under `SupportGrip` whose `quaternion` the tuner consumes. Keep the numeric
 `@export` as a **read-back display** so the value can still be baked, but the
 gizmo is the interface.
 
+### Two things that make a "gizmo" not actually be one
+
+Both of these shipped once. A control can be numerically perfect and still be
+unusable, and *the code passing its own test does not detect that.*
+
+**1. The Remote dock has no gizmo.** The editor viewport draws the **edited**
+scene, not the running game — so a node selected in the Remote tree is
+*inspectable but not draggable*. Remote gives you Inspector fields, which is
+exactly what you were escaping. **Gizmo work happens in the editor on a saved
+scene; the Remote dock is for numeric live-tuning only.** Say which one you mean
+in the handoff, because they need opposite setups.
+
+**2. A `SkeletonModifier3D` without `@tool` does not run in the editor.** So the
+gizmo sits in the editor where the modifier is dead, and the modifier runs in
+the game where there is no gizmo. Dragging appears to do nothing and the control
+reads as broken. **Any rig modifier that will be hand-tuned needs `@tool`.**
+
+Corollary for the editor route: **autoplay does not run in the editor either.**
+Without playing/scrubbing the `AnimationPlayer` first, the character sits in
+bind pose and there is no grip to judge. And open the scene that *owns* the
+skeleton (`hunter.tscn`), not one that instances it (`test_character.tscn`),
+where the sub-nodes are collapsed and unselectable without Editable Children.
+
+**Verification standard: drag the control yourself and see the thing move**, in
+the venue you are about to send the user to. "The modifier applies the rotation"
+is a different claim from "the user can grab this and use it", and only the
+second one is the deliverable.
+
 **The honest exception: bone-level posing cannot happen in Godot.** Godot 4 has
 no in-viewport bone rotation gizmo (open proposals godot-proposals#887 and
 #2891). So per-joint work — finger curl especially — has no gizmo to offer. It
@@ -100,12 +128,13 @@ precondition makes a working control look broken.
 
 ### Worked example
 
-> **Select** `Player/Hunter/GeneralSkeleton/RightHandAttach/WeaponSocket/SupportGrip`
-> in the **Remote** dock (press F5 first; tick
-> `Player/WeaponManager → calibration_freeze` before touching anything, or
-> your drags get overwritten every frame).
+> **Open `scenes/characters/hunter.tscn`** — not `test_character.tscn`, where
+> `Hunter` is an instanced scene and the skeleton is collapsed. Select the
+> **`AnimationPlayer`** and play `W2_Stand_Aim_Idle_v2` first, or the character
+> stands in bind pose with no grip to judge.
 >
-> **Drag** it with the move gizmo (**W**).
+> **Select** `GeneralSkeleton/RightHandAttach/WeaponSocket/SupportGrip` in the
+> **Scene** dock and **drag** it with the move gizmo (**W**).
 >
 > **Correct** looks like: the left palm sits on the underside of the handguard,
 > fingers wrapping up around it, the wrist not bent back, and the two hands a
@@ -115,8 +144,15 @@ precondition makes a working control look broken.
 > from a front orbit (press **1** for the hands view). A grip that looks right
 > from one angle only is the classic false positive.
 >
-> **After:** note the numbers, tell me, and I bake them into
-> `tools/build_weapons.gd` — Remote-tree values are gone when the game closes.
+> **After:** **Ctrl/Cmd+S**, then tell me the numbers and I bake them into
+> `tools/build_weapons.gd` — a rebuild reverts anything not baked.
+
+If you send them to the **Remote** dock instead (live numeric tuning while the
+game runs), the setup is different and the ending is different: press **F5**
+first, tick `Player/WeaponManager → calibration_freeze` or every value is
+rewritten each frame and editing appears to do nothing, and warn that
+**Remote-tree values are gone when the game closes** — they must be written down,
+not saved.
 
 ## Camera, while the user works
 
