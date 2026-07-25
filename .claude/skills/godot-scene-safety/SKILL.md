@@ -34,6 +34,31 @@ settings written externally while it runs are lost.
 **Symptom:** a node you just added is missing, or a value reverted, or the scene
 loads with entire branches absent.
 
+### 1b. The editor can save a scene's content into a DIFFERENT scene's file
+
+Worse variant, observed 2026-07-21. With several scenes open, the editor wrote
+`hunter.tscn`'s contents into **both** `test_character.tscn` and `node_3d.tscn`.
+Each went from ~49 lines to ~4717, root node renamed to `Hunter`, and the main
+scene lost its camera, ground and lighting — so Play produced a **blank grey
+window** with no error anywhere.
+
+The editor log showed tab-index desync just before it:
+`Index p_idx = 2 is out of bounds (edited_scene.size() = 2)` from
+`editor_data.cpp`.
+
+**Mitigations:**
+- Keep few scene tabs open, and close ones you are not working in.
+- **`git status` is the safety net.** After any editing session, an unexpected
+  4000-line diff on a scene you did not touch is this bug. Check before
+  committing.
+- Recovery is `git checkout <scene>` — which is only possible because the good
+  version was committed. Commit working scenes promptly.
+
+**Diagnosing a blank/grey game window:** check the running tree for a camera
+first (`godot_exec` → `root.get_viewport().get_camera_3d()`), then confirm the
+main scene's root node is the one you expect. A scene whose root is suddenly a
+different node is this failure, not a rendering problem.
+
 ## 2. Transform3D serialises COLUMN-wise
 
 In `.tscn` text, `Transform3D(a,b,c, d,e,f, g,h,i, ox,oy,oz)` maps to
