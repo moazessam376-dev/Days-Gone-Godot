@@ -47,16 +47,50 @@ print(bpy.app.version_string)
 print(sys.version)
 ```
 
-Paste the output back so it lands here verbatim.
+Or run it headlessly, which is what was actually done here:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender --background \
+    --python-expr "import bpy, sys; print(bpy.app.version_string); print(sys.version)"
+```
+
+**Recorded 2026-07-25**, installed from `blender-4.5.12-macos-arm64.dmg`
+(checksum verified, quarantine flag cleared, code signature valid):
 
 ```
-<!-- PENDING: paste bpy.app.version_string and sys.version output here -->
+4.5.12 LTS
+3.11.11 (main, Apr 25 2025, 12:39:20) [Clang 17.0.0 (clang-1700.0.13.3)]
 ```
 
 | | Recorded value |
 |---|---|
-| `bpy.app.version_string` | _pending_ |
-| `sys.version` (bundled Python) | _pending_ — expect 3.11.x on the 4.5 series; **verify, do not assume** |
+| `bpy.app.version_string` | **`4.5.12 LTS`** |
+| `bpy.app.version` | **`(4, 5, 12)`** |
+| `sys.version` (bundled Python) | **`3.11.11`** |
+| `io_scene_fbx` | bundled, enabled — `bpy.ops.import_scene.fbx` available |
+| `io_scene_gltf2` | bundled, enabled — `bpy.ops.export_scene.gltf` available |
+
+**`--background` confirmed working**, so `check_clip.py` can run headless in CI.
+Unlike Godot's `--headless`, Blender's `--background` evaluates the full
+dependency graph and armatures.
+
+### Export properties verified present on this build
+
+Checked against the live RNA rather than assumed from docs — these are the
+exact names `export_clip.py` sets, and a rename between Blender versions is the
+usual way an export script breaks silently:
+
+`export_format` · `export_yup` · `export_animations` · `export_animation_mode` ·
+`export_def_bones` · `export_leaf_bone` · `export_anim_slide_to_zero` ·
+`export_bake_animation` · `export_force_sampling` · `use_selection` ·
+`export_apply`
+
+Re-run the check after any Blender upgrade:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender --background --python-expr \
+  "import bpy; print(sorted(bpy.ops.export_scene.gltf.get_rna_type().properties.keys()))"
+```
 
 ### CLI
 
