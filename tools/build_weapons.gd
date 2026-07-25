@@ -126,7 +126,11 @@ func _assault_rifle() -> WeaponResource:
 	# Iterated against screenshots: pulled back to the guard's rear third (a
 	# far-forward target straightened the elbow — user), then raised toward
 	# the underside ("the left palm is on the air").
-	w.support_grip_pos = Vector3(0.06, 0.075, 0.33)
+	# Hand-placed by the user on the gizmo, 2026-07-25, in hunter.tscn with the
+	# AnimationPlayer previewing W2_Stand_Aim_Idle_v2 ("happy with this").
+	# Replaces the screenshot-loop seed (0.06, 0.075, 0.33): further forward
+	# along the handguard and slightly inboard.
+	w.support_grip_pos = Vector3(0.0967697, 0.005177, 0.2837636)
 	# CARRY grip: just ahead of the mag well, close to the right hand — the
 	# handguard point over-reached the arm in the low carry ("left arm is
 	# still over/hyper extended ... normalize the space between two hands on
@@ -138,12 +142,19 @@ func _assault_rifle() -> WeaponResource:
 	# session, 2026-07-23) — in-progress values banked from their Inspector
 	# screenshots so a crash or restart cannot lose them; the session is
 	# still refining.
-	w.wrist_offset_deg = Vector3(-7, 18, -3)
-	w.thumb_curl = 55.0
+	# Support (left) hand, hand-finished by the user 2026-07-25 on the WristTarget
+	# gizmo + tuner sliders, previewing W2_Stand_Aim_Idle_v2 in hunter.tscn.
+	# The wrist is a big correction because the MotusMan clip's left hand is
+	# posed for its own foregrip, not the Synty AK's; thumb_curl swings fully
+	# negative to OPEN the thumb over the handguard instead of closing it.
+	# Axes are stored unnormalised on purpose — the tuner normalises, so only
+	# their direction matters and these are the values as dialled.
+	w.wrist_offset_deg = Vector3(-37.3, 109.7, 41.0)
+	w.thumb_curl = -90.0
 	w.index_curl = 30.0
-	w.middle_curl = 35.0
-	w.curl_axis = Vector3(1.0, 0.0, 1.5)
-	w.thumb_axis = Vector3(0.7, 0.0, 0.6)
+	w.middle_curl = 30.0
+	w.curl_axis = Vector3(15.72, 12.44, 4.01)
+	w.thumb_axis = Vector3(-5.94, -2.76, -10.11)
 
 	# Days Gone diagonal back carry. SEED ONLY. UpperChest-bone space: grip
 	# lands at the lower back right (-X right, -Y down, -Z behind); the

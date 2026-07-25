@@ -45,6 +45,16 @@ const CHAINS := {
 	"middle": ["LeftMiddleProximal", "LeftMiddleIntermediate", "LeftMiddleDistal"],
 }
 
+## The GUN (right) hand. It had no controls at all until 2026-07-25 — the user
+## hit "I have 0 control over the right hand, and it's not properly placed",
+## which is a plumbing bug by this project's own rule: if there is no control
+## for part of the pose, that is Claude's fault, not a question.
+const RIGHT_CHAINS := {
+	"thumb": ["RightThumbMetacarpal", "RightThumbProximal", "RightThumbDistal"],
+	"index": ["RightIndexProximal", "RightIndexIntermediate", "RightIndexDistal"],
+	"middle": ["RightMiddleProximal", "RightMiddleIntermediate", "RightMiddleDistal"],
+}
+
 ## The draggable wrist control: a Node3D whose ROTATION is the correction.
 ## Rotate it with the E gizmo instead of typing Euler triples — a number field
 ## is what put the user back into the adjust-screenshot-adjust loop this whole
@@ -65,6 +75,27 @@ const CHAINS := {
 @export_range(-90.0, 90.0, 0.5) var index_curl := 0.0
 @export_range(-90.0, 90.0, 0.5) var middle_curl := 0.0
 
+@export_group("Gun (right) hand")
+## Draggable roll for the GUN hand: rotate `RightWristTarget` with the E gizmo.
+##
+## CAUTION, and it is the whole reason this is separate from the grip: the
+## weapon hangs off the RightHand bone via BoneAttachment3D, so rotating this
+## rotates the GUN with the hand. It aims the weapon; it does not re-seat the
+## hand on it. To fix how the hand SITS on the gun, move the gun instead —
+## `WeaponSocket` (gizmo) or the weapon's `mesh_offset` — and wrap the fingers
+## with the curls below.
+@export var right_wrist_target: NodePath
+
+## Mirrors `right_wrist_target` when one is wired. Read-back for baking.
+@export var right_wrist_offset_deg := Vector3.ZERO
+
+## Curl for the gun hand, degrees on top of the animation. This is the control
+## for "the fingers are not wrapping the pistol grip" — it closes the hand
+## around the weapon without moving the weapon.
+@export_range(-90.0, 90.0, 0.5) var right_thumb_curl := 0.0
+@export_range(-90.0, 90.0, 0.5) var right_index_curl := 0.0
+@export_range(-90.0, 90.0, 0.5) var right_middle_curl := 0.0
+
 @export_group("Bend axes (measured from the mocap — rarely need changing)")
 ## Axis the index/middle joints bend around. Measured off the animation's own
 ## rotation on LeftIndexProximal / LeftMiddleProximal, which curl about
@@ -76,8 +107,19 @@ const CHAINS := {
 
 var _bones: Dictionary = {}
 var _wrist := -1
+var _right_wrist := -1
 var _resolved := false
 var _target_cache: Node3D = null
+var _right_target_cache: Node3D = null
+
+
+func _right_wrist_target() -> Node3D:
+	if _right_target_cache != null and is_instance_valid(_right_target_cache):
+		return _right_target_cache
+	if right_wrist_target.is_empty():
+		return null
+	_right_target_cache = get_node_or_null(right_wrist_target) as Node3D
+	return _right_target_cache
 
 
 # Resolved every call rather than cached on _ready: this modifier runs inside
@@ -116,6 +158,21 @@ func _process_modification() -> void:
 	_curl("index", index_curl, curl_axis, skel)
 	_curl("middle", middle_curl, curl_axis, skel)
 
+	# --- gun (right) hand ---
+	var right_target := _right_wrist_target()
+	if right_target != null:
+		right_wrist_offset_deg = right_target.rotation_degrees
+
+	if _right_wrist >= 0 and right_wrist_offset_deg != Vector3.ZERO:
+		var roff := Quaternion.from_euler(right_wrist_offset_deg * (PI / 180.0))
+		skel.set_bone_pose_rotation(
+			_right_wrist, skel.get_bone_pose_rotation(_right_wrist) * roff
+		)
+
+	_curl("right_thumb", right_thumb_curl, thumb_axis, skel)
+	_curl("right_index", right_index_curl, curl_axis, skel)
+	_curl("right_middle", right_middle_curl, curl_axis, skel)
+
 
 func _curl(chain: String, degrees: float, axis: Vector3, skel: Skeleton3D) -> void:
 	if is_zero_approx(degrees):
@@ -134,11 +191,18 @@ func _curl(chain: String, degrees: float, axis: Vector3, skel: Skeleton3D) -> vo
 func _resolve(skel: Skeleton3D) -> void:
 	_resolved = true
 	_wrist = skel.find_bone("LeftHand")
+	_right_wrist = skel.find_bone("RightHand")
 	_bones.clear()
 	for chain: String in CHAINS:
-		var idxs: Array[int] = []
-		for n: String in CHAINS[chain]:
-			var i := skel.find_bone(n)
-			if i >= 0:
-				idxs.append(i)
-		_bones[chain] = idxs
+		_bones[chain] = _resolve_chain(skel, CHAINS[chain])
+	for chain: String in RIGHT_CHAINS:
+		_bones["right_" + chain] = _resolve_chain(skel, RIGHT_CHAINS[chain])
+
+
+func _resolve_chain(skel: Skeleton3D, names: Array) -> Array[int]:
+	var idxs: Array[int] = []
+	for n: String in names:
+		var i := skel.find_bone(n)
+		if i >= 0:
+			idxs.append(i)
+	return idxs
