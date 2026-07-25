@@ -68,6 +68,7 @@ var _reload_t := -1.0
 @onready var _support_grip: Node3D = _socket.get_node("SupportGrip")
 @onready var _elbow_pole: Node3D = _skel.get_node("LeftElbowPole")
 @onready var _tuner: SkeletonModifier3D = _skel.get_node("SupportHandTuner")
+@onready var _wrist_target: Node3D = _support_grip.get_node_or_null("WristTarget")
 
 
 func _ready() -> void:
@@ -295,7 +296,14 @@ func _apply_weapon(slot: int) -> void:
 		_socket.transform = w.socket_transform()
 		_support_grip.position = w.support_grip_pos
 		_elbow_pole.position = w.elbow_pole_pos
-		_tuner.set("wrist_offset_deg", w.wrist_offset_deg)
+		# Write the wrist correction to the GIZMO node, not the tuner's Euler:
+		# the node is authoritative and the tuner mirrors it back every frame, so
+		# setting the Euler here would be overwritten within a frame and the
+		# per-weapon value would silently not apply.
+		if _wrist_target != null:
+			_wrist_target.rotation_degrees = w.wrist_offset_deg
+		else:
+			_tuner.set("wrist_offset_deg", w.wrist_offset_deg)
 		_tuner.set("thumb_curl", w.thumb_curl)
 		_tuner.set("index_curl", w.index_curl)
 		_tuner.set("middle_curl", w.middle_curl)

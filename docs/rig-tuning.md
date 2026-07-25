@@ -29,7 +29,7 @@ and adjust while it runs; no restart, no rebuild.
 | Where the **weapon** sits in the right hand | `GeneralSkeleton/RightHandAttach/WeaponSocket` | Drag / rotate gizmo |
 | Where the **support (left) hand** goes | `…/WeaponSocket/SupportGrip` | Drag gizmo |
 | Which way the **left elbow** points | `GeneralSkeleton/LeftElbowPole` | Drag gizmo |
-| **Left wrist** rotation | `GeneralSkeleton/SupportHandTuner` → `wrist_offset_deg` | Inspector |
+| **Left wrist** rotation | `…/WeaponSocket/SupportGrip/WristTarget` | **Rotate gizmo (E)** |
 | **Left finger** curl | `SupportHandTuner` → `thumb_curl` / `index_curl` / `middle_curl` | Inspector sliders |
 | **Fingertip** curl, both hands | `GeneralSkeleton/FingerTips` → `follow` | Inspector |
 | Where the **rifle stows on the back** | `GeneralSkeleton/BackSocket/BackStow` | Drag / rotate gizmo |
@@ -49,6 +49,38 @@ per-clip tuning.
 The tuner ships all-zero, which is a deliberate no-op: with every slider at 0
 the pose is pure mocap. Only author a correction where the mocap is actually
 wrong on this rig.
+
+### The wrist is a gizmo now, not a number field (2026-07-25)
+
+`wrist_offset_deg` was a `Vector3` Inspector field, so rolling the palm onto a
+grip meant type-three-numbers → look → type again: the
+adjust-screenshot-adjust loop this whole document exists to prevent, rebuilt
+inside the tool meant to prevent it.
+
+**Rotate `SupportGrip/WristTarget` with the E gizmo instead.**
+`SupportHandTuner` reads that node's rotation and mirrors the Euler back into
+`wrist_offset_deg`, so the number is still there to read off and hand over for
+baking — it is a **read-back**, not an input. The WeaponManager writes the
+per-weapon value to the node (writing the Euler instead would be overwritten
+within a frame).
+
+Verified before handover, in the **main** scene, through a post-modifier
+`BoneAttachment3D` probe on `LeftHand` — all six directions:
+
+| drive | measured |
+|---|---|
+| X ±20° | 20.00° about (±1, 0, 0) |
+| Y ±20° | 20.00° about (0, ±1, 0) |
+| Z ±20° | 20.00° about (0, 0, ±1) |
+
+Exact axis, exact sign, exact magnitude. **Freeze the animation before any such
+A/B** — the character autoplays a looping aim idle, and measuring across frames
+without pausing read a 20° drive as **103°**, i.e. clip motion plus the gizmo.
+
+**Finger curl stays sliders**, and that is a real limitation rather than an
+oversight: Godot 4 has no in-viewport bone gizmo (godot-proposals#887, #2891),
+so per-joint posing cannot happen in the editor at all. It moves to Blender
+once authoring lands; see `docs/blender-env.md`.
 
 ### The rifle calibration session — two tools, two venues
 
@@ -111,6 +143,29 @@ conclusion that had to be corrected in a later commit.
 
 Check a modifier is live by counting its `modification_processed` signal, and
 judge the result **on screen**.
+
+### …but count it with a reference type, not an int (2026-07-25)
+
+**GDScript lambdas capture locals BY VALUE.** So the obvious counter
+
+```gdscript
+var fired := 0
+tuner.modification_processed.connect(func() -> void: fired += 1)   # always 0
+```
+
+increments a copy and reads **0** — which is exactly what a dead modifier looks
+like. Measured side by side on the same run of a modifier that was demonstrably
+working: `int-capture=0`, `array-capture=25`.
+
+Use a reference type:
+
+```gdscript
+var fired: Array[int] = [0]
+tuner.modification_processed.connect(func() -> void: fired[0] += 1)
+```
+
+This is the prescribed technique for *avoiding* a confidently wrong conclusion,
+so the naive version fails in the most expensive possible place.
 
 ## Modifier order
 
