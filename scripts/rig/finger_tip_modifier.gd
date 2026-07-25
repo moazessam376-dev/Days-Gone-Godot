@@ -1,6 +1,11 @@
+@tool
 extends SkeletonModifier3D
 
 ## Curls the 4th finger joint, which the humanoid retarget cannot reach.
+##
+## @tool so the hand previews correctly in the EDITOR while the user drags
+## WristTarget. Without it the tip joints sit in bind pose while the rest of the
+## finger curls, so a grip that is actually fine reads as broken.
 ##
 ## THE PROBLEM: Synty fingers have FOUR joints. Godot's SkeletonProfileHumanoid
 ## defines only three (Proximal / Intermediate / Distal). So the 4th joint of

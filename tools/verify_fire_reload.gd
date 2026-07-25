@@ -109,6 +109,29 @@ func _run() -> void:
 	)
 	_check("ADS fire: recoil kicked pitch up", arm.rotation.x > pitch_before)
 
+	# --- recoil compensation must not double-count (M4 playtest bug).
+	# A player holding the reticle on target pulls the mouse down by the kick
+	# they just took. If the rig ALSO gives that kick back, the aim sinks by
+	# the burst's whole recoil total -- measured -9 deg over a rifle mag, which
+	# put the camera in the dirt and then, over-corrected, in the sky.
+	# Driven through the rig's own entry points rather than by spending rounds:
+	# the ammo sequence downstream is exact, and the unit under test is the
+	# camera's recoil model, not the fire path (covered directly above).
+	await _wait(COOLDOWN_FRAMES)
+	var settled_pitch: float = arm.rotation.x
+	var kick := deg_to_rad(rev.recoil_pitch_deg)
+	for i in 10:
+		rig.add_recoil(rev.recoil_pitch_deg)
+		rig._add_pitch(-kick)  # the player fighting the muzzle, via mouse-look's path
+		await _wait(6)
+	await _wait(30)
+	var sink := rad_to_deg(settled_pitch - arm.rotation.x)
+	_check(
+		"recoil: compensated burst leaves aim where the player put it",
+		absf(sink) < 0.2,
+		"aim sank %.2f deg over 10 shots" % sink
+	)
+
 	# --- rpm gate: 14 pulls over ~0.7 s land exactly 2 shots (one
 	# immediate, one when the 0.462 s cooldown reopens; a third would need
 	# 0.92 s). Cooldown cleared first so the window starts clean.

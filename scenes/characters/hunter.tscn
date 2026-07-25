@@ -554,7 +554,7 @@ mesh = SubResource("ArrayMesh_4goao")
 skin = SubResource("Skin_6okj5")
 skeleton = NodePath("..")
 
-[node name="FingerTips" type="SkeletonModifier3D" parent="GeneralSkeleton" unique_id=1654256025]
+[node name="FingerTips" type="SkeletonModifier3D" parent="GeneralSkeleton" unique_id=1973976713]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -574,48 +574,51 @@ influence = 1.0
 script = ExtResource("2_38dbb")
 tip_bones = PackedStringArray()
 
-[node name="RightHandAttach" type="BoneAttachment3D" parent="GeneralSkeleton" unique_id=2022818293]
+[node name="RightHandAttach" type="BoneAttachment3D" parent="GeneralSkeleton" unique_id=293758322]
 transform = Transform3D(0, -1, 0, 0, 0, -1, 1, 0, 0, -0.8147307, 1.4385318, 0.0027616378)
 bone_name = "RightHand"
 bone_idx = 28
 
-[node name="WeaponSocket" type="Node3D" parent="GeneralSkeleton/RightHandAttach" unique_id=1702549313]
-transform = Transform3D(0.113889, 0.969717, -0.216051, 0.012759, 0.21602, 0.976306, 0.993412, -0.113947, 0.01223, 0, 0, 0)
+[node name="WeaponSocket" type="Node3D" parent="GeneralSkeleton/RightHandAttach" unique_id=1094968951]
+transform = Transform3D(0.113889, 0.760946, -0.638741, 0.012759, 0.641751, 0.766807, 0.993412, -0.095481, 0.06338, 0, 0, 0)
 
-[node name="SupportGrip" type="Node3D" parent="GeneralSkeleton/RightHandAttach/WeaponSocket" unique_id=1589092676]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.120312, 0.00387, 0.025649)
+[node name="SupportGrip" type="Node3D" parent="GeneralSkeleton/RightHandAttach/WeaponSocket" unique_id=1938920607]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06, 0.075, 0.33)
+
+[node name="WristTarget" type="Node3D" parent="GeneralSkeleton/RightHandAttach/WeaponSocket/SupportGrip" unique_id=883307014]
+transform = Transform3D(0.95172405, 0.01216637, 0.30671364, -0.051945854, 0.99118584, 0.12186935, -0.30252752, -0.1319185, 0.9439675, 0, 0, 0)
 
 [node name="Revolver" type="Node3D" parent="GeneralSkeleton/RightHandAttach/WeaponSocket" unique_id=557477171 instance=ExtResource("3_4s2kh")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.012529, 0.095424, 0.096369)
+visible = false
 
 [node name="AssaultRifle" type="Node3D" parent="GeneralSkeleton/RightHandAttach/WeaponSocket" unique_id=678508215 instance=ExtResource("4_ku4pf")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.014, 0.083, 0.096)
-visible = false
 
-[node name="HipSocket" type="BoneAttachment3D" parent="GeneralSkeleton" unique_id=203066985]
+[node name="HipSocket" type="BoneAttachment3D" parent="GeneralSkeleton" unique_id=894595383]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.0487097e-31, 0.8762761, 0)
 bone_name = "Hips"
 bone_idx = 1
 
-[node name="HipStow" type="Node3D" parent="GeneralSkeleton/HipSocket" unique_id=379584197]
+[node name="HipStow" type="Node3D" parent="GeneralSkeleton/HipSocket" unique_id=924419188]
 transform = Transform3D(0.99026805, -0.1391731, 0, 0.043006852, 0.30600965, -0.95105654, 0.13236149, 0.9418009, 0.30901697, -0.26, 0.03, -0.09)
 
-[node name="Revolver" type="Node3D" parent="GeneralSkeleton/HipSocket/HipStow" unique_id=912202562 instance=ExtResource("3_4s2kh")]
+[node name="Revolver" type="Node3D" parent="GeneralSkeleton/HipSocket/HipStow" unique_id=143860685 instance=ExtResource("3_4s2kh")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.012529, 0.095424, 0.096369)
-visible = false
 
-[node name="BackSocket" type="BoneAttachment3D" parent="GeneralSkeleton" unique_id=2130964532]
+[node name="BackSocket" type="BoneAttachment3D" parent="GeneralSkeleton" unique_id=362000723]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.069271e-06, 1.3375111, -0.031847477)
 bone_name = "UpperChest"
 bone_idx = 4
 
-[node name="BackStow" type="Node3D" parent="GeneralSkeleton/BackSocket" unique_id=1294791009]
+[node name="BackStow" type="Node3D" parent="GeneralSkeleton/BackSocket" unique_id=615408853]
 transform = Transform3D(0.76604444, -1.0226522e-08, 0.64278764, -0.64278764, -2.809714e-08, 0.76604444, 1.0226522e-08, -1, -2.809714e-08, -0.18, -0.3, -0.16)
 
-[node name="AssaultRifle" type="Node3D" parent="GeneralSkeleton/BackSocket/BackStow" unique_id=423828668 instance=ExtResource("4_ku4pf")]
+[node name="AssaultRifle" type="Node3D" parent="GeneralSkeleton/BackSocket/BackStow" unique_id=2131678229 instance=ExtResource("4_ku4pf")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.014, 0.083, 0.096)
+visible = false
 
-[node name="PostureAdjust" type="SkeletonModifier3D" parent="GeneralSkeleton" unique_id=1318107374]
+[node name="PostureAdjust" type="SkeletonModifier3D" parent="GeneralSkeleton" unique_id=853998601]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -634,19 +637,19 @@ active = true
 influence = 1.0
 script = ExtResource("5_rbyn0")
 
-[node name="TorsoLookAt" type="LookAtModifier3D" parent="GeneralSkeleton" unique_id=1202371357]
+[node name="TorsoLookAt" type="LookAtModifier3D" parent="GeneralSkeleton" unique_id=440205373]
 influence = 0.6
 target_node = NodePath("../../AimTarget")
 bone_name = "UpperChest"
 duration = 0.15
 
-[node name="HeadLookAt" type="LookAtModifier3D" parent="GeneralSkeleton" unique_id=1199596317]
+[node name="HeadLookAt" type="LookAtModifier3D" parent="GeneralSkeleton" unique_id=406638713]
 influence = 0.35
 target_node = NodePath("../../AimTarget")
 bone_name = "Head"
 duration = 0.15
 
-[node name="LeftArmIK" type="TwoBoneIK3D" parent="GeneralSkeleton" unique_id=1479292518]
+[node name="LeftArmIK" type="TwoBoneIK3D" parent="GeneralSkeleton" unique_id=92803373]
 setting_count = 1
 settings/0/target_node = NodePath("../RightHandAttach/WeaponSocket/SupportGrip")
 settings/0/pole_node = NodePath("../LeftElbowPole")
@@ -658,10 +661,10 @@ settings/0/pole_direction = 0
 settings/0/end_bone_name = "LeftHand"
 settings/0/end_bone = -1
 
-[node name="LeftElbowPole" type="Node3D" parent="GeneralSkeleton" unique_id=2141744665]
+[node name="LeftElbowPole" type="Node3D" parent="GeneralSkeleton" unique_id=262998206]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.915536, 1, 0.15)
 
-[node name="SupportHandTuner" type="SkeletonModifier3D" parent="GeneralSkeleton" unique_id=1957613013]
+[node name="SupportHandTuner" type="SkeletonModifier3D" parent="GeneralSkeleton" unique_id=2135047843]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -679,16 +682,17 @@ visibility_parent = NodePath("")
 active = true
 influence = 1.0
 script = ExtResource("6_xkfbs")
-wrist_offset_deg = Vector3(2.82, -3.78, 0.09)
-thumb_curl = 57.5
-index_curl = -90.0
-middle_curl = -20.0
-curl_axis = Vector3(1.62, -2.36, -0.9)
-thumb_axis = Vector3(0.578, 0, 0.685)
+wrist_target = NodePath("../RightHandAttach/WeaponSocket/SupportGrip/WristTarget")
+wrist_offset_deg = Vector3(-7, 18, -3)
+thumb_curl = 55.0
+index_curl = 30.0
+middle_curl = 35.0
+curl_axis = Vector3(1, 0, 1.5)
+thumb_axis = Vector3(0.7, 0, 0.6)
 
-[node name="AimTarget" type="Node3D" parent="." unique_id=496315081]
+[node name="AimTarget" type="Node3D" parent="." unique_id=436823368]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 10)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1958644033]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=777391248]
 libraries/ = ExtResource("7_cqb3w")
-autoplay = &"W1_Stand_Aim_Idle_IPC"
+autoplay = &"W2_Stand_Aim_Idle_v2"

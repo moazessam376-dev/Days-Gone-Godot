@@ -620,6 +620,19 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	socket.add_child(support)
 	support.position = equipped.support_grip_pos
 
+	# The wrist correction as a DRAGGABLE control. It shipped as a Vector3
+	# Inspector field, which made hand-tuning the palm roll "type three numbers,
+	# look, type again" — the adjust-screenshot-adjust loop that the
+	# user-places/Claude-plumbs split exists to prevent. Rotating a node with the
+	# E gizmo is the interface now; SupportHandTuner reads this node's rotation
+	# and mirrors the Euler back so the value is still readable and bakeable.
+	# Parented under SupportGrip so it rides the gun, like every other calibrated
+	# value here — set once per weapon, valid in every clip.
+	var wrist := Node3D.new()
+	wrist.name = "WristTarget"
+	support.add_child(wrist)
+	wrist.rotation_degrees = equipped.wrist_offset_deg
+
 	# Days Gone body carry: one stow point per body socket, its transform
 	# owned by the weapon stowed there. The user drags HipStow / BackStow to
 	# place; the values bake into build_weapons.gd.
@@ -734,6 +747,7 @@ func _attach_weapon(skel: Skeleton3D) -> void:
 	# Corrections ON TOP of the mocap, per weapon ("how wrong the clip's left
 	# hand is on this rig holding THIS gun") — the WeaponManager re-applies
 	# them on every equip; the scene ships the default weapon's set.
+	tuner.wrist_target = NodePath("../RightHandAttach/WeaponSocket/SupportGrip/WristTarget")
 	tuner.wrist_offset_deg = equipped.wrist_offset_deg
 	tuner.thumb_curl = equipped.thumb_curl
 	tuner.index_curl = equipped.index_curl

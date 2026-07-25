@@ -93,6 +93,22 @@ func _run() -> void:
 			ar.carry_support_grip_pos
 		)
 	)
+	# The support-hand IK must actually REACH the grip target, not stall short
+	# of it. Read through a BoneAttachment3D: get_bone_global_pose() returns the
+	# pose from BEFORE the modifier stack, where a working IK is an exact
+	# no-op. This is what separates "the grip target is placed wrong" (the
+	# user's gizmo job) from "the IK is not solving" (a plumbing bug).
+	var palm := BoneAttachment3D.new()
+	palm.bone_name = "LeftHand"
+	skel.add_child(palm)
+	await _wait(2)
+	var grip_node: Node3D = socket.get_node("SupportGrip")
+	var reach := palm.global_position.distance_to(grip_node.global_position)
+	_check(
+		"support hand IK reaches the grip target",
+		reach < 0.01,
+		"palm sits %.1f cm off the target" % (reach * 100.0)
+	)
 	_check(
 		"tuner curls = rifle tres",
 		(

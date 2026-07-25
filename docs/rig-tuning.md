@@ -29,7 +29,7 @@ and adjust while it runs; no restart, no rebuild.
 | Where the **weapon** sits in the right hand | `GeneralSkeleton/RightHandAttach/WeaponSocket` | Drag / rotate gizmo |
 | Where the **support (left) hand** goes | `…/WeaponSocket/SupportGrip` | Drag gizmo |
 | Which way the **left elbow** points | `GeneralSkeleton/LeftElbowPole` | Drag gizmo |
-| **Left wrist** rotation | `GeneralSkeleton/SupportHandTuner` → `wrist_offset_deg` | Inspector |
+| **Left wrist** rotation | `…/WeaponSocket/SupportGrip/WristTarget` | **Rotate gizmo (E)** |
 | **Left finger** curl | `SupportHandTuner` → `thumb_curl` / `index_curl` / `middle_curl` | Inspector sliders |
 | **Fingertip** curl, both hands | `GeneralSkeleton/FingerTips` → `follow` | Inspector |
 | Where the **rifle stows on the back** | `GeneralSkeleton/BackSocket/BackStow` | Drag / rotate gizmo |
@@ -49,6 +49,64 @@ per-clip tuning.
 The tuner ships all-zero, which is a deliberate no-op: with every slider at 0
 the pose is pure mocap. Only author a correction where the mocap is actually
 wrong on this rig.
+
+### Tune the wrist in the EDITOR, not the running game (2026-07-25)
+
+The gizmo lives in the editor; the Remote dock has no gizmo. **The editor
+viewport draws the EDITED scene**, so a node selected in the Remote tree is
+inspectable but *not draggable* — you get number fields, which is the thing this
+layer exists to escape.
+
+So the wrist workflow is different from the palm/curl workflow above:
+
+1. Open **`scenes/characters/hunter.tscn`** (not `test_character.tscn` — there
+   `Hunter` is an *instanced* scene, so its skeleton is collapsed and the
+   sub-nodes are not selectable without "Editable Children").
+2. Select the **`AnimationPlayer`** and press play (or scrub) on
+   `W2_Stand_Aim_Idle_v2` — autoplay does **not** run in the editor, so without
+   this the character sits in bind pose and there is no grip to judge.
+3. Select `GeneralSkeleton/RightHandAttach/WeaponSocket/SupportGrip/WristTarget`
+   and rotate with **E**. The hand responds live.
+4. **Ctrl/Cmd+S**, then hand the numbers over for baking.
+
+This only works because the rig modifiers are **`@tool`** scripts
+(`support_hand_tuner.gd`, `finger_tip_modifier.gd`, `posture_adjust.gd`).
+Without `@tool` a `SkeletonModifier3D` runs **only at runtime** — which put the
+gizmo in the editor where the code did not run, and the code in the game where
+there was no gizmo. Numerically correct, practically unusable. If a future rig
+modifier needs hand-tuning, it needs `@tool`.
+
+### The wrist is a gizmo now, not a number field (2026-07-25)
+
+`wrist_offset_deg` was a `Vector3` Inspector field, so rolling the palm onto a
+grip meant type-three-numbers → look → type again: the
+adjust-screenshot-adjust loop this whole document exists to prevent, rebuilt
+inside the tool meant to prevent it.
+
+**Rotate `SupportGrip/WristTarget` with the E gizmo instead.**
+`SupportHandTuner` reads that node's rotation and mirrors the Euler back into
+`wrist_offset_deg`, so the number is still there to read off and hand over for
+baking — it is a **read-back**, not an input. The WeaponManager writes the
+per-weapon value to the node (writing the Euler instead would be overwritten
+within a frame).
+
+Verified before handover, in the **main** scene, through a post-modifier
+`BoneAttachment3D` probe on `LeftHand` — all six directions:
+
+| drive | measured |
+|---|---|
+| X ±20° | 20.00° about (±1, 0, 0) |
+| Y ±20° | 20.00° about (0, ±1, 0) |
+| Z ±20° | 20.00° about (0, 0, ±1) |
+
+Exact axis, exact sign, exact magnitude. **Freeze the animation before any such
+A/B** — the character autoplays a looping aim idle, and measuring across frames
+without pausing read a 20° drive as **103°**, i.e. clip motion plus the gizmo.
+
+**Finger curl stays sliders**, and that is a real limitation rather than an
+oversight: Godot 4 has no in-viewport bone gizmo (godot-proposals#887, #2891),
+so per-joint posing cannot happen in the editor at all. It moves to Blender
+once authoring lands; see `docs/blender-env.md`.
 
 ### The rifle calibration session — two tools, two venues
 
@@ -111,6 +169,29 @@ conclusion that had to be corrected in a later commit.
 
 Check a modifier is live by counting its `modification_processed` signal, and
 judge the result **on screen**.
+
+### …but count it with a reference type, not an int (2026-07-25)
+
+**GDScript lambdas capture locals BY VALUE.** So the obvious counter
+
+```gdscript
+var fired := 0
+tuner.modification_processed.connect(func() -> void: fired += 1)   # always 0
+```
+
+increments a copy and reads **0** — which is exactly what a dead modifier looks
+like. Measured side by side on the same run of a modifier that was demonstrably
+working: `int-capture=0`, `array-capture=25`.
+
+Use a reference type:
+
+```gdscript
+var fired: Array[int] = [0]
+tuner.modification_processed.connect(func() -> void: fired[0] += 1)
+```
+
+This is the prescribed technique for *avoiding* a confidently wrong conclusion,
+so the naive version fails in the most expensive possible place.
 
 ## Modifier order
 
@@ -220,3 +301,50 @@ Both were diagnosed by the clip sweep (`godot-animation-pipeline` skill):
   leveling the aim spine rotates the gun up with it — a −16.5° bias read as
   the rifle aiming 35° skyward, screenshot-verified, and the aim stance's
   own forward lean reads as intent, not defect.
+
+## Recoil must not double-count the player's compensation (2026-07-24)
+
+The M4 firing playtest showed the camera sinking into the dirt over a rifle
+burst and then, over-corrected, ending up in the sky. It was **not** the kick
+size — with hands off the mouse, 26 shots move the pitch **+0.07°**, i.e.
+nothing.
+
+The bug was in the recovery. `camera_rig.gd` banked every kick as
+`_recoil_debt` and drained it back to the baseline. But a player holding the
+reticle on target pulls the mouse **down by the kick they just took** — and
+the rig then handed that same correction back a second time. Measured against
+the real script:
+
+| player behaviour | pitch after 26 shots (before / after) |
+|---|---|
+| hands off the mouse | +0.07° / +0.07° |
+| pulls down 1× kick (holding the reticle on target) | **−9.03°** / −0.00° |
+| pulls down 2× kick | −9.10° / −9.10° (their own pull, nothing added) |
+
+Fix: mouse-look pitch goes through `_add_pitch()`, and a **downward** input
+pays off the outstanding debt instead of stacking with it. `add_recoil()` also
+banks only what the pitch clamp actually let through — firing at the ceiling
+used to bank debt that never moved the camera, then drag it down on drain.
+
+Regression: `tools/verify_fire_reload.gd` → "recoil: compensated burst leaves
+aim where the player put it". It reads **−14.00°** (10 × the revolver's 1.4°
+kick — the whole recoil total) if the payoff is removed.
+
+**The recoil kick size is still untuned.** +0.07° over a mag is invisible;
+`recoil_pitch_deg` per weapon is the knob, and it wants a playtest now that
+the model underneath it is honest.
+
+## The support-hand IK reaches — a wrong grip is placement, not plumbing
+
+Measured in the running main scene through a `BoneAttachment3D` on `LeftHand`
+(post-modifier; `get_bone_global_pose()` would read a working IK as a no-op):
+the palm lands **0.0 cm** from `SupportGrip` in both carry and ADS. So when the
+rifle grip looks wrong, the target is in the wrong place — a gizmo job, per
+"the user places, Claude plumbs" — and not a solver that is failing to reach.
+
+Useful frame for that session: in socket space **+z runs along the barrel**,
+the rifle spans **z −0.21 … +0.82 m** and **y −0.10 … +0.23 m**, the muzzle is
+at z 0.696, and the current ADS grip point is `(0.06, 0.075, 0.33)`.
+
+Regression: `tools/verify_weapon_switching.gd` → "support hand IK reaches the
+grip target".
