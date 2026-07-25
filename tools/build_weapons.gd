@@ -135,7 +135,13 @@ func _assault_rifle() -> WeaponResource:
 	# handguard point over-reached the arm in the low carry ("left arm is
 	# still over/hyper extended ... normalize the space between two hands on
 	# relaxed" — user). player.gd lerps between the two with stance.
-	w.carry_support_grip_pos = Vector3(0.06, 0.06, 0.22)
+	# Low-carry grip, hand-placed by the user 2026-07-26 previewing
+	# W2_Stand_Relaxed_Idle_v2. player.gd lerps SupportGrip between this and
+	# support_grip_pos by the stance blend, so these two points cover every
+	# rifle state -- there is no per-clip grip tuning.
+	# Note it sits only ~8 mm behind the ADS point (z 0.2755 vs 0.2838) but
+	# 4 cm higher: the carry differs mostly in hand HEIGHT, not reach.
+	w.carry_support_grip_pos = Vector3(0.0600682, 0.0448443, 0.2755048)
 	w.elbow_pole_pos = Vector3(0.915536, 1.0, 0.15)
 
 	# Authored by the user live in the running game (calibration_freeze
