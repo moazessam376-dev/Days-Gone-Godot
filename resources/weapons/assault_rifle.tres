@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponResource" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/SM_Wep_AssaultRifle_01.fbx" id="1_4unbu"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_resource.gd" id="2_0nnpp"]
+
+[resource]
+script = ExtResource("2_0nnpp")
+id = &"AssaultRifle"
+anim_set = 1
+mesh_scene = ExtResource("1_4unbu")
+socket_basis_x = Vector3(0.113889, 0.012759, 0.993412)
+socket_basis_y = Vector3(0.760946, 0.641751, -0.095481)
+socket_basis_z = Vector3(-0.638741, 0.766807, 0.06338)
+mesh_offset = Vector3(0.014, 0.083, 0.096)
+support_grip_pos = Vector3(0.06, 0.075, 0.33)
+carry_support_grip_pos = Vector3(0.06, 0.06, 0.22)
+elbow_pole_pos = Vector3(0.915536, 1, 0.15)
+wrist_offset_deg = Vector3(-7, 18, -3)
+thumb_curl = 55.0
+index_curl = 30.0
+middle_curl = 35.0
+curl_axis = Vector3(1, 0, 1.5)
+thumb_axis = Vector3(0.7, 0, 0.6)
+stow_socket = "back"
+stow_position = Vector3(-0.18, -0.3, -0.16)
+stow_rotation_deg = Vector3(-50, 90, -90)
+damage = 18.0
+rpm = 600.0
+auto_fire = true
+mag_size = 30
+reserve = 90
+reload_time = 2.2
+spread_deg = 1.4
+recoil_pitch_deg = 0.35
+hitscan_range = 150.0
+muzzle_offset = Vector3(0, 0.112, 0.696)

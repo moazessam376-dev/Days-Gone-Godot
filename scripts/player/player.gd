@@ -1,12 +1,13 @@
 extends CharacterBody3D
 
 # Phase 2 player: camera-relative movement on a CharacterBody3D, driving the
-# AnimationTree (locomotion blend spaces, stance/weapon blends) and the
-# torso/head LookAt aim.
+# AnimationTree's locomotion axes (blend positions, stance, carry arm lock)
+# and the torso/head LookAt aim. The WeaponManager sibling owns the weapon
+# axes (WeaponBlend / HolsterBlend / one-shot pickers), switching and stow.
 # Carry: the body turns to face where it moves. ADS (hold `aim`): the body
-# faces the camera and movement becomes strafing at walk speed.
-# Deliberately NOT here yet: sprint/roll/jump (Phase 3), real weapon
-# switching (M3), firing/reload (M4).
+# faces the camera and movement becomes strafing at walk speed. ADS needs a
+# gun actually in the hand — while holstered the manager auto-draws first.
+# Deliberately NOT here yet: sprint/roll/jump (Phase 3), firing/reload (M4).
 
 ## Model-forward correction: the Synty character faces +Z, Godot bodies face
 ## -Z, so the visual yaw gets PI added on top of the movement heading.
@@ -18,14 +19,21 @@ const AIM_RAY_LENGTH := 30.0
 ## LookAt influence targets (torso, head): full while aiming, a subtle
 ## residual while carrying so the character keeps some life.
 const LOOKAT_ADS := Vector2(0.6, 0.35)
+## Rifle ADS locks the torso harder. Its composite aim upper body is a
+## static pose, and the strafe legs' hips carry a ~40 deg gait twist whose
+## spine counter-rotation the composite discards — the LookAt has to
+## recover it (measured: gun yawed 12-17 deg right at 0.6 influence, ~4 at
+## 0.9). The pistol keeps the approved 0.6 — its aim clips track on their
+## own.
+const LOOKAT_ADS_RIFLE := Vector2(0.9, 0.35)
 const LOOKAT_CARRY := Vector2(0.15, 0.1)
 
 @export var tuning: PlayerTuning
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _stance := 0.0
-var _weapon := 0.0
 
+@onready var _weapons: WeaponManager = $WeaponManager
 @onready var _camera_rig: Node3D = $CameraRig
 @onready var _camera: Camera3D = $CameraRig/SpringArm3D/Camera3D
 @onready var _hunter: Node3D = $Hunter
@@ -35,6 +43,8 @@ var _weapon := 0.0
 @onready var _head_look: SkeletonModifier3D = $Hunter/GeneralSkeleton/HeadLookAt
 @onready var _left_ik: SkeletonModifier3D = $Hunter/GeneralSkeleton/LeftArmIK
 @onready var _hand_tuner: SkeletonModifier3D = $Hunter/GeneralSkeleton/SupportHandTuner
+@onready var _weapon_socket: Node3D = $Hunter/GeneralSkeleton/RightHandAttach/WeaponSocket
+@onready var _support_grip: Node3D = _weapon_socket.get_node("SupportGrip")
 
 
 func _ready() -> void:
@@ -56,15 +66,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	# Until M3's WeaponManager: 1/2 switch which animation set plays.
-	elif event.is_action_pressed("weapon_1"):
-		_weapon = 0.0
-	elif event.is_action_pressed("weapon_2"):
-		_weapon = 1.0
 
 
 func _physics_process(delta: float) -> void:
-	var ads := Input.is_action_pressed("aim")
+	# ADS requires a gun on screen: while holstered the WeaponManager
+	# auto-draws on `aim`, and the stance raise follows once the gun is in
+	# the hand; during a swap the crossfade stays in carry.
+	var ads := (
+		Input.is_action_pressed("aim") and _weapons.gun_in_hand() and not _weapons.is_swapping()
+	)
 	_camera_rig.ads = ads
 
 	var input_2d := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -114,7 +124,10 @@ func _update_anim_tree(ads: bool, delta: float) -> void:
 	var carry_pos := clampf(planar.length() / tuning.jog_speed, 0.0, 1.0)
 
 	_tree.set("parameters/PistolAim/blend_position", aim_pos)
-	_tree.set("parameters/RifleAim/blend_position", aim_pos)
+	_tree.set("parameters/RifleAimLegs/blend_position", aim_pos)
+	# Rifle aim upper body locked to the calibrated aim pose; legs walk the
+	# direction underneath (see build_anim_tree.gd).
+	_tree.set("parameters/RifleAim/blend_amount", 1.0)
 	_tree.set("parameters/PistolCarryLegs/blend_position", carry_pos)
 	# Composite carry: body from the walk space, gun arm held hanging by the
 	# side (see build_anim_tree.gd); lock strength is live-tunable. The inner
@@ -122,14 +135,11 @@ func _update_anim_tree(ads: bool, delta: float) -> void:
 	# fully on.
 	_tree.set("parameters/PistolCarry/blend_amount", tuning.pistol_carry_arm_lock)
 	_tree.set("parameters/PistolCarryUpper/blend_amount", 1.0)
-	_tree.set("parameters/RifleCarry/blend_position", carry_pos)
+	_tree.set("parameters/RifleCarryLegs/blend_position", carry_pos)
+	_tree.set("parameters/RifleCarry/blend_amount", tuning.rifle_carry_arm_lock)
 	_tree.set("parameters/Unarmed/blend_position", carry_pos)
 	_tree.set("parameters/PistolMove/blend_amount", _stance)
 	_tree.set("parameters/RifleMove/blend_amount", _stance)
-	_tree.set("parameters/WeaponBlend/blend_amount", _weapon)
-	_tree.set("parameters/FireClip/blend_amount", _weapon)
-	_tree.set("parameters/ReloadClip/blend_amount", _weapon)
-	_tree.set("parameters/HolsterBlend/blend_amount", 0.0)
 
 
 func _update_aim(ads: bool, delta: float) -> void:
@@ -137,14 +147,31 @@ func _update_aim(ads: bool, delta: float) -> void:
 	var target := origin - _camera.global_transform.basis.z * AIM_RAY_LENGTH
 	_aim_target.global_position = target
 
-	var goal := LOOKAT_ADS if ads else LOOKAT_CARRY
+	var weapon := _weapons.equipped_weapon()
+	var rifle_in_hand := _weapons.gun_in_hand() and weapon.anim_set == 1
+
+	var goal := LOOKAT_CARRY
+	if ads:
+		goal = LOOKAT_ADS_RIFLE if rifle_in_hand else LOOKAT_ADS
 	var w := 1.0 - exp(-3.0 * delta / maxf(tuning.aim_raise_time, 0.01))
 	_torso_look.influence = lerpf(_torso_look.influence, goal.x, w)
 	_head_look.influence = lerpf(_head_look.influence, goal.y, w)
 
-	# The support hand belongs on the gun ONLY while aiming. During carry the
-	# IK chased the grip across the body ("left hand going through the body"
-	# — user); off-aim the left arm plays its natural animated swing instead.
-	var ik_goal := 1.0 if ads else 0.0
+	# The support hand belongs on the gun while aiming — and, for the RIFLE,
+	# during carry too: rifle carry is two-handed, and the IK is what welds
+	# the left palm to the handguard across every gait. The PISTOL keeps the
+	# IK aim-only: its carry is one-handed, and carry-time IK chased the grip
+	# across the body ("left hand going through the body" — user).
+	var ik_goal := 1.0 if ads or rifle_in_hand else 0.0
 	_left_ik.influence = lerpf(_left_ik.influence, ik_goal, w)
 	_hand_tuner.influence = _left_ik.influence
+
+	# The support hand slides between its two calibrated points on the gun
+	# with the stance: cradle near the receiver in carry (the handguard
+	# point over-reached the arm), out on the handguard in ADS. Skipped
+	# under calibration_freeze — this per-frame write would otherwise erase
+	# a live tuning session's dragging within one frame.
+	if not _weapons.calibration_freeze:
+		_support_grip.position = weapon.carry_support_grip_pos.lerp(
+			weapon.support_grip_pos, _stance
+		)

@@ -31,9 +31,22 @@ extends Resource
 @export_group("Aim")
 @export var aim_raise_time := 0.25
 
+@export_group("Weapons")
+## Weapon swap: WeaponBlend crossfade through carry, mesh + rig values
+## flipping at the midpoint (no draw clips exist in the free set).
+@export var swap_time := 0.6
+## Holster/draw: HolsterBlend toward the unarmed set, the gun moving to its
+## body stow at the blend middle.
+@export var holster_time := 0.4
+
 @export_group("Carry")
 ## How firmly the gun arm holds its by-the-side hanging pose (U_Idle's arm)
 ## during carry locomotion. 1.0 = arm pinned to the pose (stiff), 0.0 = the
 ## walk's full swing. The source pose hangs straight by the side, so high-ish
 ## values stay close to the body.
 @export_range(0.0, 1.0, 0.01) var pistol_carry_arm_lock := 0.65
+## Same idea for the rifle, but BOTH arms hold the two-handed low-carry
+## idle over the gait clips (R_Carry_Jog_F jogs with the rifle raised to an
+## aim — measured — so the gait arms must not leak through). 1.0 = arms
+## pinned to the carry hold; the support-hand IK welds the left palm on top.
+@export_range(0.0, 1.0, 0.01) var rifle_carry_arm_lock := 1.0

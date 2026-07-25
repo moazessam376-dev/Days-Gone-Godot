@@ -7,8 +7,13 @@ several rounds on adjust → screenshot → adjust for weapon placement.
 
 Anything that needs "move it, look at it, move it again" is the user's job, in
 the editor, with a gizmo. Claude's job is to make sure a control *exists* for
-every part of the pose, to read the values back out, and to bake them into
-`tools/build_character.gd` so a rebuild cannot lose them.
+every part of the pose, to read the values back out, and to bake them into the
+right generator so a rebuild cannot lose them. Since M3 the bake target is
+split: **weapon values** (socket basis, mesh offset, grips, curls, stow
+placement, stats) go into `tools/build_weapons.gd` →
+`resources/weapons/*.tres`; everything else stays in
+`tools/build_character.gd`. Rebuild order: `build_weapons.gd` first, then
+`build_character.gd`.
 
 Claude should not tune poses by screenshot. That loop is exactly what cost the
 Three.js project 14 rounds, and it is slower and worse than the user doing it
@@ -27,6 +32,15 @@ and adjust while it runs; no restart, no rebuild.
 | **Left wrist** rotation | `GeneralSkeleton/SupportHandTuner` → `wrist_offset_deg` | Inspector |
 | **Left finger** curl | `SupportHandTuner` → `thumb_curl` / `index_curl` / `middle_curl` | Inspector sliders |
 | **Fingertip** curl, both hands | `GeneralSkeleton/FingerTips` → `follow` | Inspector |
+| Where the **rifle stows on the back** | `GeneralSkeleton/BackSocket/BackStow` | Drag / rotate gizmo |
+| Where the **revolver stows on the hip** | `GeneralSkeleton/HipSocket/HipStow` | Drag / rotate gizmo |
+
+The hand controls (socket, grips, curls) are **per weapon** — the values live
+on each weapon's resource and the WeaponManager re-applies them on every
+equip. When calibrating a weapon, make sure ITS values are on the shared
+nodes first (they are whatever the scene last shipped or the manager last
+applied). Eye-icon visibility toggles during a calibration session are safe:
+the WeaponManager re-asserts hand/stow visibility on every run.
 
 `SupportGrip` and the weapon socket are parented **to the gun**, so a value set
 once stays correct in every animation — walk, jog, crouch, fire. This is not
@@ -35,6 +49,40 @@ per-clip tuning.
 The tuner ships all-zero, which is a deliberate no-op: with every slider at 0
 the pose is pure mocap. Only author a correction where the mocap is actually
 wrong on this rig.
+
+### The rifle calibration session — two tools, two venues
+
+**Palm / left hand (live, in the running game):**
+1. Press **F5**. Press **2** to bring the rifle out; hold **RMB** to pose
+   ADS, or release it for the carry cradle.
+2. In the editor's Scene dock, click the **Remote** tab (appears while the
+   game runs).
+3. Select `Player/WeaponManager` and tick **`calibration_freeze`** in the
+   Inspector — without this, every value below is rewritten each frame and
+   dragging appears to do nothing.
+4. Now adjust live, in the Inspector:
+   - `Player/Hunter/GeneralSkeleton/SupportHandTuner` →
+     `wrist_offset_deg`, `thumb_curl` / `index_curl` / `middle_curl`
+     (palm rotation + finger wrap; this is the tool the pistol was
+     finished with)
+   - `Player/Hunter/GeneralSkeleton/RightHandAttach/WeaponSocket/SupportGrip`
+     → `position` (where the palm sits on the gun; note whether you were
+     in ADS or carry — they are separate baked points)
+5. Screenshot or note the final numbers and hand them to Claude to bake
+   into `tools/build_weapons.gd`. Values changed in the Remote tree are
+   gone when the game closes — the bake is what makes them permanent.
+
+**Stow placement (gizmo, in the editor, game closed):**
+1. Open `scenes/characters/hunter.tscn`.
+2. In the Scene dock select `GeneralSkeleton/BackSocket/BackStow` (rifle)
+   or `GeneralSkeleton/HipSocket/HipStow` (revolver).
+3. Drag with the move gizmo (**W**) and rotate with **E** until it sits
+   right against the body. The stowed mesh is parented under the node, so
+   it follows the gizmo.
+4. **Ctrl/Cmd+S**, then tell Claude — the values get read out of the scene
+   and baked into `tools/build_weapons.gd` (a rebuild would otherwise
+   revert them, and the WeaponManager re-asserts the .tres values on every
+   run).
 
 ### Camera, while you work
 
@@ -82,9 +130,10 @@ Phase 2 adds `LookAtModifier3D` (torso aim) and it must sit **before**
 
 ## Current authored values (pistol / revolver, aim idle)
 
-Placed by the user in the editor on 2026-07-21 and baked into
-`tools/build_character.gd`. Recorded here so the intent survives, not just the
-numbers.
+Placed by the user in the editor on 2026-07-21, originally baked into
+`tools/build_character.gd`, migrated unchanged to `tools/build_weapons.gd` →
+`resources/weapons/revolver.tres` in M3. Recorded here so the intent
+survives, not just the numbers.
 
 | Control | Value | What it was correcting |
 |---|---|---|
@@ -119,3 +168,55 @@ off = −0.9°; the LookAt residuals measured under 1°.
 `PostureAdjust` stays in the scene with **all pitches zeroed** as a
 live-tuning override only. If a future clip family hunches, bake its own
 correction at build time — do not turn the global sliders back on.
+
+## Assault rifle — calibrated by measurement + screenshots (2026-07-23)
+
+Calibrated in a measured screenshot loop (`tools/rig/visual_shots.tscn` —
+runs the real game windowed, injects input, captures every weapon state;
+the MCP-free window into what the player sees). The user's playtest still
+gates the feel; every value below has a live gizmo/slider for finishing.
+
+| Value | Final | Why |
+|---|---|---|
+| socket basis | revolver basis × Rx(+19.8°) | the revolver basis raw held the rifle muzzle +19.8° skyward in ADS (probed in the running game); the rotation levels ADS at 0.0° measured, carry rakes −42° (fine for a low carry) |
+| `mesh_offset` | `(0.014, 0.083, 0.096)` | negated grip centroid (112 verts) + the revolver's hand-finish delta |
+| `support_grip_pos` (ADS) | `(0.06, 0.075, 0.33)` | rear third of the handguard, raised onto the underside ("the left palm is on the air"); a far-forward target straightened the elbow ("left arm is getting a bit extended") |
+| `carry_support_grip_pos` | `(0.06, 0.06, 0.22)` | just ahead of the mag well — the handguard point over-reached the arm in the low carry ("normalize the space between two hands on relaxed"). player.gd lerps SupportGrip between the two points with the stance blend |
+| curls | thumb 25 / index 30 / middle 35 | mocap held MotusMan's foregrip — fingers read flat on the Synty AK; coarse wrap, user fine-finishes |
+| stow (BackStow) | pos `(-0.18, -0.30, -0.16)`, rot `(-50, 90, -90)` | grip lower back right, barrel up-left diagonal, hugging the back |
+
+Revolver hip stow: pos `(-0.26, 0.03, -0.09)`, rot `(72, 0, 8)` — first
+seed sat inside the thigh ("visibly going on the leg"); moved outboard, up,
+and tilted back until the front view cleared the leg.
+
+## Rifle animation fixes — measured, baked at build time (2026-07-23)
+
+Both were diagnosed by the clip sweep (`godot-animation-pipeline` skill):
+
+- **`R_Carry_Jog_F` is not a carry** — it jogs with the rifle raised to a
+  high ready (left wrist +0.50 m above hips, upper arm 73°; user: "the
+  weapon is aimed on jogging"). Fix is the SAME composite as the pistol
+  carry: `RifleCarry` = Blend2, body/legs from the gait space, BOTH clavicle
+  subtrees held on `W2_Stand_Relaxed_Idle_v2` (`rifle_carry_arm_lock`,
+  default 1.0). The support-hand IK now stays ON during rifle carry (it is
+  two-handed), welding the left palm to the handguard at every gait — the
+  pistol keeps IK aim-only.
+- **`R_Aim_Walk_B` is not an aim** — it backpedals in a low carry (left
+  wrist +0.12 m, arm 20°; user: "the rifle is not on ADS" walking
+  backwards), and the Mixamo aim strafes aim with a different wrist
+  convention than the MotusMan pose the socket is calibrated against (gun
+  off-axis; "not aiming straightforward"). Fix: `RifleAim` is a Blend2 with
+  the UPPER-BODY filter — legs blend by direction in `RifleAimLegs`, the
+  whole upper body holds `W2_Stand_Aim_Idle_v2` (the clip the socket is
+  calibrated on), LookAt + IK on top. The strafes' remaining defect — hips
+  pitched back ~21° vs the aim idle, leaking a constant +8.4° muzzle-up
+  through the unfiltered hips — is baked down by `STRAFE_HIPS_PITCH` (+14°
+  hips bias, upper legs counter-rotated by the exact conjugate so foot
+  plants are untouched; residual ~3.5°, hidden by LookAt in motion).
+- **`W2_Stand_Relaxed_Idle_v2` leans +5.2° vs the approved U_Idle −4.4°**
+  ("leaning forward weirdly with the rifle") → `W2_POSTURE` bakes −14°
+  across the spine chain (lands −2.9°; the lean responds at ~0.59× the
+  baked total). The W2 **aim** clips are deliberately NOT corrected:
+  leveling the aim spine rotates the gun up with it — a −16.5° bias read as
+  the rifle aiming 35° skyward, screenshot-verified, and the aim stance's
+  own forward lean reads as intent, not defect.

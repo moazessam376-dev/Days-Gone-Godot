@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="WeaponResource" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/SM_Wep_Revolver_01.fbx" id="1_800pc"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_resource.gd" id="2_qcmms"]
+
+[resource]
+script = ExtResource("2_qcmms")
+id = &"Revolver"
+mesh_scene = ExtResource("1_800pc")
+socket_basis_x = Vector3(0.113889, 0.012759, 0.993412)
+socket_basis_y = Vector3(0.969717, 0.21602, -0.113947)
+socket_basis_z = Vector3(-0.216051, 0.976306, 0.01223)
+mesh_offset = Vector3(0.012529, 0.095424, 0.096369)
+support_grip_pos = Vector3(0.120312, 0.00387, 0.025649)
+carry_support_grip_pos = Vector3(0.120312, 0.00387, 0.025649)
+elbow_pole_pos = Vector3(0.915536, 1, 0.15)
+wrist_offset_deg = Vector3(2.82, -3.78, 0.09)
+thumb_curl = 57.5
+index_curl = -90.0
+middle_curl = -20.0
+curl_axis = Vector3(1.62, -2.36, -0.9)
+thumb_axis = Vector3(0.578, 0, 0.685)
+stow_position = Vector3(-0.26, 0.03, -0.09)
+stow_rotation_deg = Vector3(72, 0, 8)
+damage = 65.0
+rpm = 130.0
+mag_size = 6
+reserve = 24
+reload_time = 2.6
+spread_deg = 0.5
+recoil_pitch_deg = 1.4
+hitscan_range = 60.0
+muzzle_offset = Vector3(0, 0.0714, 0.318)

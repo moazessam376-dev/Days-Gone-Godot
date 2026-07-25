@@ -14,6 +14,10 @@ var ads := false
 ## +1 = camera over the right shoulder, -1 = left. Toggled with shoulder_swap.
 var shoulder_side := 1.0
 
+## Per-weapon ADS fov, written by the WeaponManager on equip (falls back to
+## the tuning default until the first equip).
+var ads_fov := 42.0
+
 @onready var _arm: SpringArm3D = $SpringArm3D
 @onready var _camera: Camera3D = $SpringArm3D/Camera3D
 
@@ -21,6 +25,10 @@ var shoulder_side := 1.0
 func _ready() -> void:
 	_arm.spring_length = tuning.rest_distance
 	_camera.fov = tuning.fov_rest
+	ads_fov = tuning.fov_ads
+	# Start at the rest shoulder offset instead of sliding into it over the
+	# first fraction of a second after launch (issue #10).
+	_arm.position.x = tuning.shoulder_x_rest * shoulder_side
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -37,7 +45,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	var target_len: float = tuning.ads_distance if ads else tuning.rest_distance
-	var target_fov: float = tuning.fov_ads if ads else tuning.fov_rest
+	var target_fov: float = ads_fov if ads else tuning.fov_rest
 	var target_x: float = (tuning.shoulder_x_ads if ads else tuning.shoulder_x_rest) * shoulder_side
 	var blend_time: float = tuning.ads_in_time if ads else tuning.ads_out_time
 

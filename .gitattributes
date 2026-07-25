@@ -47,6 +47,7 @@
 # NOTE: .tres / .res are deliberately NOT in LFS. Godot resources are usually
 # text (scenes, materials, bone maps) and we want readable diffs on them.
 # If a large binary .res ever appears, add it here explicitly.
+resources/animation/hunter_anim_library.res filter=lfs diff=lfs merge=lfs -text
 
 # Godot text formats — keep diffs readable.
 *.gd     text

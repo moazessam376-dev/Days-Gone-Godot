@@ -51,7 +51,17 @@ const OUT := "res://resources/animation/player_anim_tree.tres"
 const PISTOL_CARRY := ["U_Idle", "UAL_Walk", "UAL_Jog_Fwd"]
 const PISTOL_CARRY_UPPER := "U_Idle"
 const PISTOL_CARRY_GRIP := "W1_Stand_Aim_Idle_IPC"
+# Rifle carry is the SAME composite trick as the pistol: body/legs from the
+# gait clips, both ARMS held on the two-handed low-carry idle. Forced by
+# measurement (2026-07-23): R_Carry_Jog_F, despite the name, jogs with the
+# rifle RAISED to a high ready (left wrist +0.50 m above hips, upper arm 73
+# deg — an aim pose; user: "the weapon is aimed on jogging"), while
+# R_Carry_Walk_F is a genuine low carry (arm 20 deg, wrist +0.15). The arm
+# filter covers BOTH clavicle subtrees — the rifle is two-handed — and the
+# support-hand IK stays on during rifle carry to weld the left palm to the
+# handguard at every gait.
 const RIFLE_CARRY := ["W2_Stand_Relaxed_Idle_v2", "R_Carry_Walk_F", "R_Carry_Jog_F"]
+const RIFLE_CARRY_HOLD := "W2_Stand_Relaxed_Idle_v2"
 const UNARMED := ["UAL_Idle", "UAL_Walk", "UAL_Jog_Fwd"]
 
 # [clip, x, y]
@@ -62,6 +72,16 @@ const PISTOL_AIM := [
 	["W1_Aim_Strafe_A", -1.0, 0.0],
 	["W1_Aim_Strafe_B", 1.0, 0.0],
 ]
+# Rifle aim locomotion is a LEGS-ONLY space under a constant aim upper body
+# (the ROADMAP's upper/lower split). Forced by measurement (2026-07-23):
+# R_Aim_Walk_B, despite the name, backpedals in a LOW CARRY (left wrist
+# +0.12 m, arm 20 deg — user: "the rifle is not on ADS" walking backwards),
+# and the Mixamo strafes aim with a different wrist convention than the
+# MotusMan pose the socket is calibrated against (gun reads off-axis —
+# user: "not aiming straightforward"). Their LEGS are all fine. So the legs
+# blend by direction while the whole upper body holds W2_Stand_Aim_Idle_v2
+# — the exact clip the socket is calibrated on — and LookAt + the support
+# IK add camera tracking and the left hand on top.
 const RIFLE_AIM := [
 	["W2_Stand_Aim_Idle_v2", 0.0, 0.0],
 	["W2_Walk_Aim_F_Loop_IPC", 0.0, 1.0],
@@ -69,6 +89,7 @@ const RIFLE_AIM := [
 	["R_Aim_Strafe_L", -1.0, 0.0],
 	["R_Aim_Strafe_R", 1.0, 0.0],
 ]
+const RIFLE_AIM_POSE := "W2_Stand_Aim_Idle_v2"
 
 const FIRE_CLIPS := ["W1_Stand_Fire_Single", "R_Fire"]
 const RELOAD_CLIPS := ["W1_Reload", "R_Reload"]
@@ -77,9 +98,17 @@ const RELOAD_CLIPS := ["W1_Reload", "R_Reload"]
 func _init() -> void:
 	var filter_paths := _subtree_paths("Spine")
 	var right_arm_paths := _subtree_paths("RightShoulder")
+	var left_arm_paths := _subtree_paths("LeftShoulder")
 	var finger_paths := _subtree_paths("RightHand")
-	finger_paths = finger_paths.filter(func(p: String) -> bool: return not p.ends_with(":RightHand"))
-	if filter_paths.is_empty() or right_arm_paths.is_empty() or finger_paths.is_empty():
+	finger_paths = finger_paths.filter(
+		func(p: String) -> bool: return not p.ends_with(":RightHand")
+	)
+	if (
+		filter_paths.is_empty()
+		or right_arm_paths.is_empty()
+		or left_arm_paths.is_empty()
+		or finger_paths.is_empty()
+	):
 		push_error("could not measure filter bones")
 		quit(1)
 		return
@@ -111,10 +140,35 @@ func _init() -> void:
 	tree.add_node("PistolCarry", carry_mix, Vector2(-600, -200))
 	tree.connect_node("PistolCarry", 0, "PistolCarryLegs")
 	tree.connect_node("PistolCarry", 1, "PistolCarryUpper")
-	tree.add_node("RifleCarry", _space_1d(RIFLE_CARRY), Vector2(-600, 0))
+	# RifleCarry = Blend2 with a BOTH-ARMS filter: unfiltered tracks (body,
+	# legs, spine) come from the gait space, filtered tracks (both clavicle
+	# subtrees) hold the two-handed low-carry idle. blend_amount = the
+	# live-tunable rifle_carry_arm_lock.
+	tree.add_node("RifleCarryLegs", _space_1d(RIFLE_CARRY), Vector2(-800, 20))
+	tree.add_node("RifleCarryHold", _anim(RIFLE_CARRY_HOLD), Vector2(-800, 100))
+	var rifle_carry_mix := AnimationNodeBlend2.new()
+	rifle_carry_mix.filter_enabled = true
+	for p in right_arm_paths:
+		rifle_carry_mix.set_filter_path(p, true)
+	for p in left_arm_paths:
+		rifle_carry_mix.set_filter_path(p, true)
+	tree.add_node("RifleCarry", rifle_carry_mix, Vector2(-600, 0))
+	tree.connect_node("RifleCarry", 0, "RifleCarryLegs")
+	tree.connect_node("RifleCarry", 1, "RifleCarryHold")
 	tree.add_node("Unarmed", _space_1d(UNARMED), Vector2(-600, 200))
 	tree.add_node("PistolAim", _space_2d(PISTOL_AIM), Vector2(-600, -300))
-	tree.add_node("RifleAim", _space_2d(RIFLE_AIM), Vector2(-600, -100))
+	# RifleAim = Blend2 with the UPPER-BODY filter (Spine subtree): legs from
+	# the direction space, everything above the hips from the calibrated aim
+	# pose. blend_amount pinned to 1.0 by player.gd.
+	tree.add_node("RifleAimLegs", _space_2d(RIFLE_AIM), Vector2(-800, -120))
+	tree.add_node("RifleAimPose", _anim(RIFLE_AIM_POSE), Vector2(-800, -40))
+	var rifle_aim_mix := AnimationNodeBlend2.new()
+	rifle_aim_mix.filter_enabled = true
+	for p in filter_paths:
+		rifle_aim_mix.set_filter_path(p, true)
+	tree.add_node("RifleAim", rifle_aim_mix, Vector2(-600, -100))
+	tree.connect_node("RifleAim", 0, "RifleAimLegs")
+	tree.connect_node("RifleAim", 1, "RifleAimPose")
 
 	tree.add_node("PistolMove", AnimationNodeBlend2.new(), Vector2(-400, -250))
 	tree.add_node("RifleMove", AnimationNodeBlend2.new(), Vector2(-400, -50))
@@ -164,9 +218,11 @@ func _space_1d(clips: Array) -> AnimationNodeBlendSpace1D:
 	var space := AnimationNodeBlendSpace1D.new()
 	space.min_space = 0.0
 	space.max_space = 1.0
-	var positions := [0.0, 0.5, 1.0]
+	# Evenly spaced over 0..1 regardless of clip count (a hardcoded 3-point
+	# table crashed on the day a 4th gait clip appeared — issue #10).
+	var last := maxi(clips.size() - 1, 1)
 	for i in clips.size():
-		space.add_blend_point(_anim(clips[i]), positions[i])
+		space.add_blend_point(_anim(clips[i]), float(i) / float(last))
 	return space
 
 
@@ -199,7 +255,14 @@ func _subtree_paths(root_bone: String) -> Array[String]:
 	var skel: Skeleton3D = hunter.get_node("%GeneralSkeleton")
 	if skel == null:
 		return out
-	var stack := [skel.find_bone(root_bone)]
+	# A BoneMap rename must fail loudly here, not emit a junk filter list
+	# built from index -1 (issue #10).
+	var root_idx := skel.find_bone(root_bone)
+	if root_idx == -1:
+		push_error("filter root bone not found: " + root_bone)
+		hunter.free()
+		return out
+	var stack := [root_idx]
 	while stack.size() > 0:
 		var b: int = stack.pop_back()
 		out.append("%GeneralSkeleton:" + skel.get_bone_name(b))
